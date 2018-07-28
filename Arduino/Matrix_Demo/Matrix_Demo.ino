@@ -5,7 +5,7 @@
 #define TRACE_ON 1
 
 #ifdef TRACE_ON
-//#define OUTPUT_TRACE 1
+#define OUTPUT_TRACE 1
 #define TRACE_CLOCK 1
 #endif
 
@@ -15,14 +15,14 @@
 #define LED8X8_COUNT 1
 #define LED8X8_PANEL_0 0
 
-#define MINUTE_SHIFT_THRESHOLD 30
+#define MINUTE_SHIFT_THRESHOLD 45
 
 
 
 LedControl led8x8=LedControl(LED8X8_DATAIN_PIN,LED8X8_CLK_PIN,LED8X8_LOAD_PIN,LED8X8_COUNT);
 
 /* we always wait a bit between updates of the display */
-unsigned long delaytime=1000;
+unsigned long delaytime=250;
 
 #define MINUTE_FULL_CIRCLE_THRESHOLD 55
 unsigned long clock_hour_bitmap=0xFFFFFFFF;
@@ -76,20 +76,27 @@ void displayUpdate() {
      *     5  H23     M9  M8  M7  M6      H12
      *     6  H22                         H13
      *     7  H21 H20 H19 H18 H17 H16 H15 H14
+     *     
+     *     Minutt bits    = cba9876543210
+     *     Minute bitmap  = 0110110110110
+     *     Row target bit = _555432225432
+     *     Row              _345555432222 
+     *     row                   76543210        
+     *     
     */
     switch(row) {
       case 0: rowPattern=mirroredPattern(clock_hour_bitmap); break;
       case 1: rowPattern=((clock_hour_bitmap>>20)&B10000000)|((clock_hour_bitmap>>8)&B00000001); break;
       case 2: rowPattern=((clock_hour_bitmap>>19)&B10000000)|((clock_hour_bitmap>>9)&B00000001)
-                          | ((mirroredPattern(clock_minute_bitmap)<<2)&B00111100); break;
+                          | mirroredPattern((clock_minute_bitmap<<2)&B00111100); break;
       case 3: rowPattern=((clock_hour_bitmap>>18) & B10000000)|((clock_hour_bitmap>>10)&B00000001)
                           | ((clock_minute_bitmap>>2 & B00000100))
-                          | ((clock_minute_bitmap>>20 & B00100000)); break;
+                          | ((clock_minute_bitmap>>6 & B00100000)); break;
       case 4: rowPattern=((clock_hour_bitmap>>17)&B10000000)|((clock_hour_bitmap>>11)&B00000001)
                           | ((clock_minute_bitmap>>3 & B00000100))
-                          | ((clock_minute_bitmap>>19 & B00100000)); break;
+                          | ((clock_minute_bitmap>>5 & B00100000)); break;
       case 5: rowPattern=((clock_hour_bitmap>>16)&B10000000)|((clock_hour_bitmap>>12)&B00000001)
-                          | ((mirroredPattern(clock_minute_bitmap)>>12)&B00111100); break;
+                          | ((clock_minute_bitmap>>4)&B00111100); break;
       case 6: rowPattern=((clock_hour_bitmap>>15)&B10000000)|((clock_hour_bitmap>>13)&B00000001); break;
       case 7: rowPattern=clock_hour_bitmap>>14;break;
       } // switch
@@ -166,14 +173,17 @@ void renderClockBitmaps(int minute_of_the_day) {
     * ************  */
 
                      
-  master_pattern=0x0db6;                                /* _24_ */                                                       /* 8  1 */                                                       /* 4  2 */
+  simple_pattern=0x0db6;                                /* _24_ */                                                       /* 8  1 */                                                       /* 4  2 */
                                                         /* _18_ */
-  if(minute_of_the_hour <MINUTE_FULL_CIRCLE_THRESHOLD) master_pattern>>=(4-(minute_of_the_hour)/15)*3;
+  if(minute_of_the_hour <MINUTE_FULL_CIRCLE_THRESHOLD) simple_pattern>>=(4-(minute_of_the_hour)/15)*3;
+  /* move 12 o clock line to bit 0-3 */
+  master_pattern=(simple_pattern<<3)|((simple_pattern>>9)&B00001111);
+  
   clock_minute_bitmap=master_pattern;
 
   #ifdef TRACE_CLOCK 
         Serial.print("\t");
-        Serial.println(0x80000000|master_pattern,BIN);
+        Serial.println(0x8000|master_pattern,BIN);
   #endif
   
 };
@@ -188,7 +198,7 @@ void loop() {
 
   /* logic*/
   minutes_of_the_day+=5; 
-  if(minutes_of_the_day >= 12*60) minutes_of_the_day=5;
+  if(minutes_of_the_day >= 12*60) {minutes_of_the_day=0;};
  // if(minutes_of_the_day > 3*60 && minutes_of_the_day < 10*60) minutes_of_the_day=10*60;
   renderClockBitmaps(minutes_of_the_day);
 
