@@ -6,6 +6,7 @@
 
 #ifdef TRACE_ON
 #define TRACE_INPUT 1
+//#define TRACE_INPUT_HIGH 1
 #endif
 
 /* Port constants */
@@ -68,12 +69,22 @@ int input_encoder_rangeMin=0;
 int input_encoder_rangeMax=719;
 int input_encoder_stepSize=1;
 bool input_encoder_change_event=false;
-
+unsigned long last_interaction_time=0;
 
 
 
 /* ********************************************************************************************************** */
 /*               Interface functions                                                                          */
+
+int input_getSecondsSinceLastEvent() {
+  unsigned long timestamp_difference=(millis()-last_interaction_time)/1000;
+  if(timestamp_difference>255) return 255;
+  #ifdef TRACE_INPUT_HIGH
+    Serial.print("last interaction:");
+    Serial.println(timestamp_difference);
+  #endif
+  return timestamp_difference;
+}
 
 byte input_selectGotPressed() {
  return (debounced_state&INPUT_SELECT_MASK)==INPUT_SELECT_PRESSED_PATTERN; ; /* We switched from unpressed to pressed */;
@@ -154,8 +165,10 @@ void input_switches_scan_tick() {  /* After every tick, especially the flank eve
       stateChangeTs[switchIndex]=micros(); // remember  our time
     } else {  /* no change in raw state */
       if(bitRead(debounced_state,bitIndex)!= rawRead && // but a change against debounced state
-         (micros()-stateChangeTs[switchIndex]>input_debounce_cooldown_interval))  // and raw is holding it long enough
+         (micros()-stateChangeTs[switchIndex]>input_debounce_cooldown_interval)) {  // and raw is holding it long enough
           bitWrite(debounced_state,bitIndex,rawRead); // Change our debounce state
+          last_interaction_time=millis();
+         }
     }
   }// For switch index
 
@@ -180,6 +193,7 @@ void input_switches_scan_tick() {  /* After every tick, especially the flank eve
                && ((debounced_state&INPUT_ENCODER_B_MASK) == INPUT_ENCODER_B_RELEASED_PATTERN)){ // B Pin just got opened
                if((input_encoder_value-=input_encoder_stepSize)<input_encoder_rangeMin) input_encoder_value=input_encoder_rangeMax; 
                input_encoder_change_event=true;
+               last_interaction_time=millis();
             };
             break;
       case ENCODER_START_WITH_B_PATTERN:
@@ -187,6 +201,7 @@ void input_switches_scan_tick() {  /* After every tick, especially the flank eve
                && ((debounced_state&INPUT_ENCODER_A_MASK) == INPUT_ENCODER_A_RELEASED_PATTERN)){ // A Pin just got opened
                  if((input_encoder_value+=input_encoder_stepSize)>input_encoder_rangeMax) input_encoder_value=input_encoder_rangeMin;
                  input_encoder_change_event=true;
+                 last_interaction_time=millis();
             };
             break;
     };

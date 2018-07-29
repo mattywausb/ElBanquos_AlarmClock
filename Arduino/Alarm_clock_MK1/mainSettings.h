@@ -4,7 +4,8 @@
 #define MINUTE_FULL_CIRCLE_THRESHOLD 55  // Minute that will show full circle
 #define MINUTE_SHIFT_THRESHOLD 45        // Minute that will shift hour gap by 1 pixel
 
-
+#define SECONDS_UNTIL_FALLBACK_LONG 15   // Number of seconds the clock will wait before falling back 
+#define SECONDS_UNTIL_FALLBACK_SHORT 5   // Number of seconds the clock will wait before falling back 
 
 
 /// The SI4703 board has to be connected by using the following connections:
@@ -27,7 +28,7 @@
 /* Dont use the following outside Output, just placed here for convinience*/
 #define ALARM_IDC_REMOVE_FROM_HOUR_MASK  B00000001
 #define ALARM_IDC_SHOW_ON_RING3_MASK     B00000010
-#define ALARM_IDC_BLINK_MASK             B00000110
+#define ALARM_IDC_BLINK_MASK             B00000100
 
 
 

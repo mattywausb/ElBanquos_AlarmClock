@@ -1,7 +1,6 @@
 //We always have to include the library
 #include "LedControl.h"
 
-
 #include "mainSettings.h"
 
 #ifdef TRACE_ON
@@ -13,7 +12,7 @@
 #define REFERENCE_TIME_AGE_FOR_INVALID 144000
 
 const unsigned long demo_delaytime=400;
-unsigned long demo_prev_frame_time=0;
+
 
 
 /* Some general knowledge about time */
@@ -25,6 +24,7 @@ unsigned long demo_prev_frame_time=0;
 
 enum CLOCK_STATE {
   STATE_IDLE, // show time, check for alarms, check age of rds time 
+  STATE_ALARM_INFO,  // Show Alarm time
   STATE_ALARM_CHANGE,  // Change and set Alarm time
   STATE_DEMO  // show fast time progressing
 };
@@ -34,6 +34,8 @@ CLOCK_STATE clock_state = STATE_IDLE; ///< The state variable is used for parsin
 
 unsigned long clock_sync_time=millis();
 int clock_reference_time=-1;
+int clock_alarm_time[4]={0,0,0,0};
+byte clock_focussed_alarmIndex=0; 
 
 
 
@@ -67,13 +69,94 @@ void clock_setReferenceTime(int measured_time) {
   clock_sync_time=millis();
   clock_reference_time=measured_time;
         #ifdef TRACE_CLOCK
-        Serial.print("Referenc time set to ");
+        Serial.print("Reference time set to ");
         Serial.print(clock_getCurrentTime()/60);
         Serial.print(":");
         Serial.println(clock_getCurrentTime()%60);
       #endif
 }
+/* *************** STATE_IDLE ***************** */
 
+void enter_STATE_IDLE(){
+ clock_state=STATE_IDLE;
+ output_renderClockBitmaps(clock_getCurrentTime(),ALARM_INDICATOR_OFF);   
+         #ifdef TRACE_CLOCK
+         Serial.println("Entered STATE_IDLE");
+         #endif
+}
+
+void process_STATE_IDLE(){
+ if(input_snoozeGotPressed()) {     // SNOOZE = Switch to Demo
+    clock_state=STATE_DEMO; 
+    return;
+  }
+  
+  if(input_checkEncoderChangeEvent()) {enter_STATE_ALARM_INFO();return;}
+  if(input_selectGotPressed()) {enter_STATE_ALARM_CHANGE();return;}
+ 
+  /* Check RDS Data when necessary */
+  if(clock_getReferenceAge()>REFERENCE_TIME_AGE_FOR_CHECK) {
+    radio_setRdsScanActive(true);
+    if(radio_getRdsIsUptodate()) { /* we got an update */
+       clock_setReferenceTime(radio_getLastRdsTimeInfo());
+       radio_setRdsScanActive(false);       
+    }
+  }  
+  output_renderClockBitmaps(clock_getCurrentTime(),ALARM_INDICATOR_OFF);
+}
+
+/* *************** STATE_ALARM_INFO ***************** */
+
+void enter_STATE_ALARM_INFO(){
+  
+  clock_state=STATE_ALARM_INFO; 
+  input_getEncoderValue(); // Read out Encoder to get of the last event 
+  output_renderClockBitmaps( clock_alarm_time[clock_focussed_alarmIndex],ALARM_INDICATOR_SHOW);
+           #ifdef TRACE_CLOCK
+         Serial.println("Entered STATE_ALARM_INFO");
+         #endif
+}
+
+void process_STATE_ALARM_INFO(){
+     if(input_snoozeGotPressed()
+        || input_getSecondsSinceLastEvent()> SECONDS_UNTIL_FALLBACK_SHORT) {
+            enter_STATE_IDLE(); return;
+          }
+
+    if(input_selectGotPressed()) {
+             enter_STATE_ALARM_CHANGE();return;
+             return;
+    }
+   output_renderClockBitmaps( clock_alarm_time[clock_focussed_alarmIndex],ALARM_INDICATOR_SHOW);
+  
+}
+
+/* *************** STATE_ALARM_CHANGE ***************** */
+
+void enter_STATE_ALARM_CHANGE(){
+  clock_state=STATE_ALARM_CHANGE; 
+  input_setEncoderRange(0, MINUTES_PER_DAY-1,15,clock_alarm_time[clock_focussed_alarmIndex]);
+  output_renderClockBitmaps(input_getEncoderValue(),ALARM_INDICATOR_EDIT);
+           #ifdef TRACE_CLOCK
+         Serial.println("Entered STATE_ALARM_CHANGE");
+         #endif
+}
+
+void process_STATE_ALARM_CHANGE(){
+      if(input_snoozeGotPressed() 
+             || input_getSecondsSinceLastEvent()> SECONDS_UNTIL_FALLBACK_LONG) {
+             /* tbd: play cancel  sequence */
+             enter_STATE_IDLE();return;
+          }
+
+      if(input_selectGotPressed()) {
+        /* tbd: play store sequence */
+        clock_alarm_time[clock_focussed_alarmIndex]=input_getEncoderValue();
+        enter_STATE_IDLE();return;       
+      }
+
+      output_renderClockBitmaps(input_getEncoderValue(),ALARM_INDICATOR_EDIT); 
+}
 
 
 
@@ -87,10 +170,12 @@ void setup() {
  Serial.begin(9600);
  Serial.println("--------->Start<------------");
  #endif
-
+ 
   output_setup();
   input_setup(0, MINUTES_PER_DAY-1,15); /* Encoder Range 24 hoursis,stepping quater hours */
   radio_setup();
+
+  clock_alarm_time[0]=6*60+30; /* Fall back alarm = 6:30 */
 }
 
 
@@ -101,49 +186,21 @@ void setup() {
 
 void loop() { 
   static int demo_minutes_of_the_day=0;
-  static unsigned int last_time_of_interaction=0;
+  static unsigned long demo_prev_frame_time=0;
 
   /* Inputs */
   input_switches_scan_tick();
   radio_loop_tick();
 
-  /* logic*/
+  /* logic */
   switch (clock_state) {
     
-    case STATE_IDLE:  
-         if(input_snoozeGotPressed()) {     // SNOOZE = Switch to Demo
-            clock_state=STATE_DEMO; 
-            output_renderClockBitmaps(demo_minutes_of_the_day,ALARM_INDICATOR_ON);   
-            break;
-          }
+    case STATE_IDLE:          process_STATE_IDLE(); break;
           
-          if(input_checkEncoderChangeEvent()){  // ENCODER CHANGE=Set Alarm
-            clock_state=STATE_ALARM_CHANGE;
-            output_renderClockBitmaps(input_getEncoderValue(),ALARM_INDICATOR_EDIT);
-          }
-
-          /* Check RDS Data when necessary */
-          if(clock_getReferenceAge()>REFERENCE_TIME_AGE_FOR_CHECK) {
-            radio_setRdsScanActive(true);
-            if(radio_getRdsIsUptodate()) { /* we got an update */
-               clock_setReferenceTime(radio_getLastRdsTimeInfo());
-               radio_setRdsScanActive(false);       
-            }
-          }
+    case STATE_ALARM_INFO:    process_STATE_ALARM_INFO(); break;
           
-          output_renderClockBitmaps(clock_getCurrentTime(),ALARM_INDICATOR_OFF); 
-          break;
-    /* ------------------------------------------------------------------ */  
-          
-    case STATE_ALARM_CHANGE:
-          if(input_selectGotPressed()) {
-             clock_state=STATE_IDLE;
-             output_renderClockBitmaps(clock_getCurrentTime(),ALARM_INDICATOR_OFF); 
-          }
-
-          output_renderClockBitmaps(input_getEncoderValue(),ALARM_INDICATOR_EDIT);
-          break;
-    /* ------------------------------------------------------------------ */  
+    case STATE_ALARM_CHANGE:  process_STATE_ALARM_CHANGE(); break;
+ /* ------------------------------------------------------------------ */  
           
     case STATE_DEMO:
          if(input_snoozeGotPressed()) {
