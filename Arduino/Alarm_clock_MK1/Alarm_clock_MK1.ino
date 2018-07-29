@@ -25,6 +25,7 @@ unsigned long demo_prev_frame_time=0;
 
 enum CLOCK_STATE {
   STATE_IDLE, // show time, check for alarms, check age of rds time 
+  STATE_ALARM_CHANGE,  // Change and set Alarm time
   STATE_DEMO  // show fast time progressing
 };
 
@@ -33,6 +34,7 @@ CLOCK_STATE clock_state = STATE_IDLE; ///< The state variable is used for parsin
 
 unsigned long clock_sync_time=millis();
 int clock_reference_time=-1;
+
 
 
 
@@ -87,7 +89,7 @@ void setup() {
  #endif
 
   output_setup();
-  input_setup(0, 24*4); /* Encoder Range is quater hours */
+  input_setup(0, MINUTES_PER_DAY-1,15); /* Encoder Range 24 hoursis,stepping quater hours */
   radio_setup();
 }
 
@@ -99,6 +101,7 @@ void setup() {
 
 void loop() { 
   static int demo_minutes_of_the_day=0;
+  static unsigned int last_time_of_interaction=0;
 
   /* Inputs */
   input_switches_scan_tick();
@@ -107,11 +110,16 @@ void loop() {
   /* logic*/
   switch (clock_state) {
     
-    case STATE_IDLE:  // show time, check for alarms, check age of rds time
-          if(input_snoozeGotPressed()) { 
+    case STATE_IDLE:  
+         if(input_snoozeGotPressed()) {     // SNOOZE = Switch to Demo
             clock_state=STATE_DEMO; 
             output_renderClockBitmaps(demo_minutes_of_the_day);   
             break;
+          }
+          
+          if(input_checkEncoderChangeEvent()){  // ENCODER CHANGE=Set Alarm
+            clock_state=STATE_ALARM_CHANGE;
+            output_renderClockBitmaps(input_getEncoderValue());
           }
 
           /* Check RDS Data when necessary */
@@ -124,6 +132,16 @@ void loop() {
           }
           
           output_renderClockBitmaps(clock_getCurrentTime()); 
+          break;
+    /* ------------------------------------------------------------------ */  
+          
+    case STATE_ALARM_CHANGE:
+          if(input_selectGotPressed()) {
+             clock_state=STATE_IDLE;
+             output_renderClockBitmaps(clock_getCurrentTime()); 
+          }
+
+          output_renderClockBitmaps(input_getEncoderValue());
           break;
     /* ------------------------------------------------------------------ */  
           

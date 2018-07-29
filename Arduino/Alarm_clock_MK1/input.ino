@@ -5,7 +5,7 @@
 // Activate general trace output
 
 #ifdef TRACE_ON
-//#define TRACE_INPUT 1
+#define TRACE_INPUT 1
 #endif
 
 /* Port constants */
@@ -41,7 +41,7 @@ const byte switch_pin_list[]={6,    // ENCODER A
 #define INPUT_SNOOZE_RELEASED_PATTERN  B10000000
 
 const unsigned long input_debounce_cooldown_interval = 5000; //in microseconds, never check individual state again bevor this time is over
-const unsigned long input_scan_interval = 200; //in microseconds, never scan any state before this time is over, 
+const unsigned long input_scan_interval = 100; //in microseconds, never scan any state before this time is over, 
 
 /* Variable for skipping unnecessary scans */
 unsigned long lastScanTs=0;
@@ -65,7 +65,9 @@ byte encoder_transition_state=0;
 
 int input_encoder_value=0;
 int input_encoder_rangeMin=0;
-int input_encoder_rangeMax=45;
+int input_encoder_rangeMax=719;
+int input_encoder_stepSize=1;
+bool input_encoder_change_event=false;
 
 
 
@@ -81,9 +83,13 @@ byte input_snoozeGotPressed() {
  return (debounced_state&INPUT_SNOOZE_MASK)==INPUT_SNOOZE_PRESSED_PATTERN; ; /* We switched from unpressed to pressed */;
 }
 
+bool input_checkEncoderChangeEvent(){
+  return input_encoder_change_event;
+}
 
-byte input_getEncoderValue(){
-  return input_encoder_value;
+int input_getEncoderValue(){
+    input_encoder_change_event=false;
+    return input_encoder_value;
 }
 
 void input_setEncoderValue(int newValue) {
@@ -92,11 +98,20 @@ void input_setEncoderValue(int newValue) {
   if(input_encoder_value>input_encoder_rangeMax) input_encoder_value=input_encoder_rangeMax;
 }
 
+void input_setEncoderRange(int rangeMin,int rangeMax,int stepSize,int startValue) {
+  input_encoder_rangeMin=min(rangeMin,rangeMax);
+  input_encoder_rangeMax=max(rangeMin,rangeMax);
+  input_encoder_stepSize=stepSize;
+  if(startValue>=input_encoder_rangeMin 
+     && startValue<=input_encoder_rangeMax) input_encoder_value=startValue;
+    else                                    input_encoder_value=input_encoder_rangeMin;
+}
+
 /* ********************************************************************************************************** */
 /*               S E T U P                                                                                    */
 
 
-void input_setup(int encoderRangeMin, int encoderRangeMax) {
+void input_setup(int encoderRangeMin, int encoderRangeMax,byte encoderStepSize) {
   
   /* Initialize switch pins and debounce timer array */
   for(byte switchIndex=0;switchIndex<sizeof(switch_pin_list);switchIndex++) {
@@ -106,9 +121,7 @@ void input_setup(int encoderRangeMin, int encoderRangeMax) {
   
 
   /* Initalize the encoder storage */
-  input_encoder_rangeMin=encoderRangeMin;
-  input_encoder_rangeMax=encoderRangeMax;
-  input_encoder_value=encoderRangeMin;
+  input_setEncoderRange(encoderRangeMin,encoderRangeMax,encoderStepSize,encoderRangeMin);
       
 }
 
@@ -156,7 +169,7 @@ void input_switches_scan_tick() {  /* After every tick, especially the flank eve
              ((debounced_state&INPUT_ENCODER_AB_MASK)
               ==ENCODER_START_WITH_B_PATTERN)) {
               encoder_transition_state=debounced_state&INPUT_ENCODER_AB_MASK;
-              #ifdef INPUT_TRACE
+              #ifdef TRACE_INPUT
                 Serial.print("T");
               #endif 
           };
@@ -165,23 +178,31 @@ void input_switches_scan_tick() {  /* After every tick, especially the flank eve
       case ENCODER_START_WITH_A_PATTERN:
             if(bitRead(debounced_state,INPUT_BITIDX_ENCODER_A)==0  // A is back open 
                && ((debounced_state&INPUT_ENCODER_B_MASK) == INPUT_ENCODER_B_RELEASED_PATTERN)){ // B Pin just got opened
-               if(--input_encoder_value<input_encoder_rangeMin) input_encoder_value=input_encoder_rangeMax; 
+               if((input_encoder_value-=input_encoder_stepSize)<input_encoder_rangeMin) input_encoder_value=input_encoder_rangeMax; 
+               input_encoder_change_event=true;
             };
             break;
       case ENCODER_START_WITH_B_PATTERN:
             if(bitRead(debounced_state,INPUT_BITIDX_ENCODER_B)==0  // B is back open 
                && ((debounced_state&INPUT_ENCODER_A_MASK) == INPUT_ENCODER_A_RELEASED_PATTERN)){ // A Pin just got opened
-                 if(++input_encoder_value>input_encoder_rangeMax) input_encoder_value=input_encoder_rangeMin;
+                 if((input_encoder_value+=input_encoder_stepSize)>input_encoder_rangeMax) input_encoder_value=input_encoder_rangeMin;
+                 input_encoder_change_event=true;
             };
             break;
     };
-            
+
+     #ifdef TRACE_INPUT
+      if(input_encoder_change_event) {
+        Serial.print("Encoder:");
+        Serial.println(input_encoder_value);
+      }
+     #endif
     /* Reset encoder  transition state, when all debounced 
        states of the encoder contacts are low */
     if((debounced_state&
        INPUT_ENCODER_AB_MASK&
        INPUT_DEBOUNCED_CURRENT_STATE_MASK)==0) {
-       #ifdef INPUT_TRACE
+       #ifdef TRACE_INPUT
                 if(encoder_transition_state) {Serial.print(input_encoder_value); Serial.println("<--Encoder idle");}
               #endif 
               encoder_transition_state=ENCODER_IDLE_POSITION;
