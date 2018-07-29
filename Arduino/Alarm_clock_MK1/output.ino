@@ -22,11 +22,13 @@
 
 unsigned long clock_hour_bitmap=TIME_UNKNOWN_PATTERN;
 unsigned int clock_minute_bitmap=0xFFFF;
-byte alarm_indicator_bitmap=0x00;
+byte flag_indicator_bitmap=0x00;
 #define ALARM_INDICATOR_1_MASK B10000001
 #define ALARM_INDICATOR_2_MASK B00100000
 #define ALARM_INDICATOR_3_MASK B01000010
 #define ALARM_INDICATOR_4_MASK B00000100
+#define AFTERNOON_INDICATOR_MASK B00011000
+
 
 #define ALARM_INDICATOR_2_4_MASK B00100100
 
@@ -65,22 +67,24 @@ void output_matrix_displayUpdate() {
     switch(row) {
       case 0: rowPattern=mirroredPattern(clock_hour_bitmap); break;
       case 1: rowPattern=((clock_hour_bitmap>>20)&B10000000)|((clock_hour_bitmap>>8)&B00000001)
-                          | (alarm_indicator_bitmap&ALARM_INDICATOR_2_4_MASK); break;
+                          | (flag_indicator_bitmap&ALARM_INDICATOR_2_4_MASK); break;
       case 2: rowPattern=((clock_hour_bitmap>>19)&B10000000)|((clock_hour_bitmap>>9)&B00000001)
                           | mirroredPattern((clock_minute_bitmap<<2)&B00111100)
-                          | (alarm_indicator_bitmap&ALARM_INDICATOR_3_MASK);; break;
+                          | (flag_indicator_bitmap&ALARM_INDICATOR_3_MASK);; break;
       case 3: rowPattern=((clock_hour_bitmap>>18) & B10000000)|((clock_hour_bitmap>>10)&B00000001)
                           | ((clock_minute_bitmap>>2 & B00000100))
-                          | ((clock_minute_bitmap>>6 & B00100000)); break;
+                          | ((clock_minute_bitmap>>6 & B00100000))
+                          | (flag_indicator_bitmap&AFTERNOON_INDICATOR_MASK); break;
       case 4: rowPattern=((clock_hour_bitmap>>17)&B10000000)|((clock_hour_bitmap>>11)&B00000001)
                           | ((clock_minute_bitmap>>3 & B00000100))
-                          | ((clock_minute_bitmap>>5 & B00100000)); break;
+                          | ((clock_minute_bitmap>>5 & B00100000))
+                          | (flag_indicator_bitmap&AFTERNOON_INDICATOR_MASK); break;
       case 5: rowPattern=((clock_hour_bitmap>>16)&B10000000)|((clock_hour_bitmap>>12)&B00000001)
                           | ((clock_minute_bitmap>>4)&B00111100)
-                          | ((alarm_indicator_bitmap&ALARM_INDICATOR_1_MASK)<<1)
-                          | ((alarm_indicator_bitmap&ALARM_INDICATOR_1_MASK)>>1); break;
+                          | ((flag_indicator_bitmap&ALARM_INDICATOR_1_MASK)<<1)
+                          | ((flag_indicator_bitmap&ALARM_INDICATOR_1_MASK)>>1); break;
       case 6: rowPattern=((clock_hour_bitmap>>15)&B10000000)|((clock_hour_bitmap>>13)&B00000001)
-                          | (alarm_indicator_bitmap&ALARM_INDICATOR_2_4_MASK); break;
+                          | (flag_indicator_bitmap&ALARM_INDICATOR_2_4_MASK); break;
       case 7: rowPattern=clock_hour_bitmap>>14;break;
       } // switch
    
@@ -111,6 +115,7 @@ void output_renderClockBitmaps(int minute_of_the_day,byte alarmIndicator) {
     clock_hour_bitmap=TIME_UNKNOWN_PATTERN;
                         /* 000000010 01001001 */
     clock_minute_bitmap=0x0249;
+    flag_indicator_bitmap=0x00;
     return;
   }
   /* ********** *
@@ -177,15 +182,18 @@ void output_renderClockBitmaps(int minute_of_the_day,byte alarmIndicator) {
   if(alarmIndicator&ALARM_IDC_SHOW_ON_RING3_MASK && ((
     alarmIndicator&ALARM_IDC_BLINK_MASK)==0|| millis()%1000>500) ) {
     switch(switchOffBar) {
-      case 0: alarm_indicator_bitmap=ALARM_INDICATOR_3_MASK;break;
-      case 1: alarm_indicator_bitmap=ALARM_INDICATOR_4_MASK;break;
-      case 2: alarm_indicator_bitmap=ALARM_INDICATOR_1_MASK;break;
-      case 3: alarm_indicator_bitmap=ALARM_INDICATOR_2_MASK;break;
+      case 0: flag_indicator_bitmap=ALARM_INDICATOR_3_MASK;break;
+      case 1: flag_indicator_bitmap=ALARM_INDICATOR_4_MASK;break;
+      case 2: flag_indicator_bitmap=ALARM_INDICATOR_1_MASK;break;
+      case 3: flag_indicator_bitmap=ALARM_INDICATOR_2_MASK;break;
     }
-  } else alarm_indicator_bitmap=0x00;
+  } else flag_indicator_bitmap=0x00;
+
+  /* set afternoon flag when showing alarms and time is 12:00 or above */
+  if(alarmIndicator&ALARM_IDC_SHOW_ON_RING3_MASK && minute_of_the_day>=720)   flag_indicator_bitmap|=AFTERNOON_INDICATOR_MASK;
   
   #ifdef TRACE_OUTPUT_BITSET 
-        Serial.println(0x80|alarm_indicator_bitmap,BIN);
+        Serial.println(0x80|flag_indicator_bitmap,BIN);
   #endif 
 
    /* *************
