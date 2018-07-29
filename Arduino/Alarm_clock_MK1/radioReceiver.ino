@@ -32,6 +32,13 @@
 SI4703 radio;    // Create an instance of Class for Si4703 Chip
 RDSParser rds;
 
+#define RADIO_FLAG_PLAY     1
+#define RADIO_FLAG_FADE_IN  2
+#define RADIO_FLAG_FADE_OUT 3
+#define RADIO_FLAG_RDS      5
+
+byte radio_operation_flags=0;
+
 int radio_rdsTimeInfo=-1; // Time of day in minutes, -1= no time available
 unsigned long  radio_lastRdsCatchTime=0;
 char radio_lastStationName[20]="<unknown>";
@@ -44,6 +51,11 @@ bool radio_getRdsIsUptodate() {
   if(millis()-radio_lastRdsCatchTime <  RDS_UPTODATE_THRESHOLD)  return true;
   return false;
   };
+
+void radio_setRdsScanActive(bool flag)
+{
+  bitWrite(radio_operation_flags,RADIO_FLAG_RDS,flag);
+}
 
 /* internal functions */
 void RDS_process(uint16_t block1, uint16_t block2, uint16_t block3, uint16_t block4) {
@@ -95,16 +107,20 @@ void radio_setup() {
   #ifdef TRACE_RADIO
     radio.debugEnable();
   #endif
+
   
+  pinMode(LED_BUILTIN,OUTPUT);
+  digitalWrite(LED_BUILTIN,false);
+   
   // Initialize the Radio 
   radio.init();
 
-  radio.setVolume(1);
-  radio.setBandFrequency(FIX_BAND, FIX_STATION);
-  radio.setMute(true);
-  delay(200);
+
     
   // Set all radio setting to the fixed values.
+  radio.setVolume(0);
+  radio.setBandFrequency(FIX_BAND, FIX_STATION);
+  radio.setMute(true);
   radio.setMono(true);
 
   // initialize RDS Features
@@ -115,16 +131,20 @@ void radio_setup() {
   radio.setMute(false);
 
   #ifdef TRACE_RADIO
-      Serial.println(".Radio  is running");
+      Serial.println("Radio is up and running");
       displayStatus();
   #endif
 } // setup
 
 
-/// show the current chip data every 3 seconds.
-void radio_loop_tick() {
+// Babysit the radio for rds or sound fading
 
-  radio.checkRDS();
+void radio_loop_tick() {
+  if(bitRead(radio_operation_flags,RADIO_FLAG_RDS)) {
+         radio.checkRDS();
+  }
+  digitalWrite(LED_BUILTIN,bitRead(radio_operation_flags,RADIO_FLAG_RDS));
+  
   #ifdef TRACE_RADIO
 //      Serial.println("radio loop tick");
   #endif
