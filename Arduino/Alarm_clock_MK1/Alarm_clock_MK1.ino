@@ -17,10 +17,22 @@
 #define LED8X8_PANEL_0 0
 
 #define MINUTE_SHIFT_THRESHOLD 45
-#define MAX_RDS_TIME_AGE 2
+
+#define REFERENCE_TIME_AGE_FOR_CHECK 30
+#define REFERENCE_TIME_AGE_FOR_NOTIFY 90
+#define REFERENCE_TIME_AGE_FOR_INVALID 144000
+
 
 const unsigned long demo_delaytime=400;
 unsigned long demo_prev_frame_time=0;
+
+
+/* Some general knowledge about time */
+#define MINUTES_PER_DAY 1440
+#define MILLIES_PER_DAY 86400000
+#define MILLIES_PER_MINUTE 60000
+
+/* Clock variables */
 
 enum CLOCK_STATE {
   STATE_IDLE, // show time, check for alarms, check age of rds time 
@@ -28,7 +40,13 @@ enum CLOCK_STATE {
 };
 
 CLOCK_STATE clock_state = STATE_IDLE; ///< The state variable is used for parsing input characters.
-int clock_currentTime=-1; // We dont know yet
+#define TIME_UNKNOWN -1
+
+unsigned long clock_sync_time=millis();
+int clock_reference_time=-1;
+
+/* Output variables and constants */
+
                              /*84218421 84218421 84218421 84218421 */   
                              /*00001100 11011001 10110011 01100110 */ 
                              /*0   C    D   9    B   3    6   6 */
@@ -40,8 +58,6 @@ LedControl led8x8=LedControl(LED8X8_DATAIN_PIN,LED8X8_CLK_PIN,LED8X8_LOAD_PIN,LE
 #define MINUTE_FULL_CIRCLE_THRESHOLD 55
 unsigned long clock_hour_bitmap=TIME_UNKNOWN_PATTERN;
 unsigned int clock_minute_bitmap=0xFFFF;
-
-
 
 /* output functions */
 byte mirroredPattern (byte pattern)
@@ -191,9 +207,40 @@ void renderClockBitmaps(int minute_of_the_day) {
   
 };
 
+/* ************************************************************
+ *     Clock functions
+ * ************************************************************
+ */
+
 int clock_getCurrentTime() {
-  return clock_currentTime;
+  if(clock_reference_time==TIME_UNKNOWN) return TIME_UNKNOWN;
+  return (((millis()-clock_sync_time)/60000)+clock_reference_time)%MINUTES_PER_DAY;
 }
+
+unsigned long clock_getSyncTime(){
+  return clock_sync_time; 
+}
+
+int clock_getReferenceAge(){
+  if (clock_sync_time==0) {  /* Seems we dont have any data */
+    if(millis()<REFERENCE_TIME_AGE_FOR_NOTIFY) return REFERENCE_TIME_AGE_FOR_CHECK; /* Warn gracefully */
+    return millis();  /* We get worried */
+  }
+  return (millis()-clock_sync_time)/MILLIES_PER_MINUTE;
+}
+
+void clock_setReferenceTime(int measured_time) {
+  clock_sync_time=millis();
+  clock_reference_time=measured_time;
+        #ifdef TRACE_CLOCK
+        Serial.print("Referenc time set to ");
+        Serial.print(clock_getCurrentTime()/60);
+        Serial.print(":");
+        Serial.println(clock_getCurrentTime()%60);
+      #endif
+}
+
+
 
 
 /* ************************************************************
@@ -239,15 +286,13 @@ void loop() {
   input_switches_scan_tick();
 
   /* Check RDS Data when necessary */
-  if(clock_currentTime<0 || radio_getLastRdsTimeAge()>MAX_RDS_TIME_AGE) {
+  if(clock_getReferenceAge()>REFERENCE_TIME_AGE_FOR_CHECK) {
     digitalWrite(LED_BUILTIN,true);
     radio_loop_tick();
-    if(radio_getLastRdsTimeAge()<MAX_RDS_TIME_AGE && radio_getLastRdsTimeInfo()>=0) { /* we got an update */
-      clock_currentTime=radio_getLastRdsTimeInfo();
+    if(radio_getRdsIsUptodate()) { /* we got an update */
+       clock_setReferenceTime(radio_getLastRdsTimeInfo());
        digitalWrite(LED_BUILTIN,false);
-      #ifdef TRACE_CLOCK
-        Serial.println("copied RDS to currentTime");
-      #endif
+
     }
   }
 

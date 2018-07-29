@@ -26,6 +26,7 @@
 #define FIX_STATION  10260            // FRITZ in Berlin
 #define FINAL_VOLUME   8               ///< The volume that will finally be set by this sketch is level 8.
 
+#define RDS_UPTODATE_THRESHOLD 50000  // Milliseconds we delary our information as actual
 
 // --- State memory and objects
 SI4703 radio;    // Create an instance of Class for Si4703 Chip
@@ -38,12 +39,11 @@ char radio_lastStationName[20]="<unknown>";
 /* interface */
 int radio_getLastRdsTimeInfo() { return radio_rdsTimeInfo;};
 
-int radio_getLastRdsTimeAge() { 
-#define MILLIES_OF_A_DAY 86400000
-  unsigned long age_in_millis= (millis())-radio_lastRdsCatchTime;
-  if(age_in_millis>MILLIES_OF_A_DAY) return MILLIES_OF_A_DAY/1000;
-  return (millis()-radio_lastRdsCatchTime)/60000;
-}
+bool radio_getRdsIsUptodate() {
+  if(radio_lastRdsCatchTime==0) return false; // obviusly we never have seen anything
+  if(millis()-radio_lastRdsCatchTime <  RDS_UPTODATE_THRESHOLD)  return true;
+  return false;
+  };
 
 /* internal functions */
 void RDS_process(uint16_t block1, uint16_t block2, uint16_t block3, uint16_t block4) {
@@ -99,7 +99,7 @@ void radio_setup() {
   // Initialize the Radio 
   radio.init();
 
-  radio.setVolume(0);
+  radio.setVolume(1);
   radio.setBandFrequency(FIX_BAND, FIX_STATION);
   radio.setMute(true);
   delay(200);
