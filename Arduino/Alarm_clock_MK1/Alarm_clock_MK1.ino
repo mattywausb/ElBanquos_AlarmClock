@@ -113,13 +113,13 @@ void loop() {
     case STATE_IDLE:  
          if(input_snoozeGotPressed()) {     // SNOOZE = Switch to Demo
             clock_state=STATE_DEMO; 
-            output_renderClockBitmaps(demo_minutes_of_the_day);   
+            output_renderClockBitmaps(demo_minutes_of_the_day,ALARM_INDICATOR_ON);   
             break;
           }
           
           if(input_checkEncoderChangeEvent()){  // ENCODER CHANGE=Set Alarm
             clock_state=STATE_ALARM_CHANGE;
-            output_renderClockBitmaps(input_getEncoderValue());
+            output_renderClockBitmaps(input_getEncoderValue(),ALARM_INDICATOR_EDIT);
           }
 
           /* Check RDS Data when necessary */
@@ -131,24 +131,25 @@ void loop() {
             }
           }
           
-          output_renderClockBitmaps(clock_getCurrentTime()); 
+          output_renderClockBitmaps(clock_getCurrentTime(),ALARM_INDICATOR_OFF); 
           break;
     /* ------------------------------------------------------------------ */  
           
     case STATE_ALARM_CHANGE:
           if(input_selectGotPressed()) {
              clock_state=STATE_IDLE;
-             output_renderClockBitmaps(clock_getCurrentTime()); 
+             output_renderClockBitmaps(clock_getCurrentTime(),ALARM_INDICATOR_OFF); 
           }
 
-          output_renderClockBitmaps(input_getEncoderValue());
+          output_renderClockBitmaps(input_getEncoderValue(),ALARM_INDICATOR_EDIT);
           break;
     /* ------------------------------------------------------------------ */  
           
     case STATE_DEMO:
          if(input_snoozeGotPressed()) {
             clock_state=STATE_IDLE; 
-            output_renderClockBitmaps(clock_getCurrentTime()); 
+            input_getEncoderValue(); // to Remove all change events 
+            output_renderClockBitmaps(clock_getCurrentTime(),ALARM_INDICATOR_OFF); 
             break;  
           }
           
@@ -158,7 +159,7 @@ void loop() {
             demo_minutes_of_the_day+=5; 
             if(demo_minutes_of_the_day >= 12*60) {demo_minutes_of_the_day=0;};
             // if(demo_minutes_of_the_day > 3*60 &&demo_minutes_of_the_day < 10*60) minutes_of_the_day=10*60;
-            output_renderClockBitmaps(demo_minutes_of_the_day);  
+            output_renderClockBitmaps(demo_minutes_of_the_day,ALARM_INDICATOR_ON);  
          }  
         break; 
     /* ------------------------------------------------------------------ */  

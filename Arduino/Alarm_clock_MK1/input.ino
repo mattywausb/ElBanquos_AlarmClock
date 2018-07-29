@@ -191,12 +191,6 @@ void input_switches_scan_tick() {  /* After every tick, especially the flank eve
             break;
     };
 
-     #ifdef TRACE_INPUT
-      if(input_encoder_change_event) {
-        Serial.print("Encoder:");
-        Serial.println(input_encoder_value);
-      }
-     #endif
     /* Reset encoder  transition state, when all debounced 
        states of the encoder contacts are low */
     if((debounced_state&

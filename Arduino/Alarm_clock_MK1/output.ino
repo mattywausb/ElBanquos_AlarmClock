@@ -22,6 +22,14 @@
 
 unsigned long clock_hour_bitmap=TIME_UNKNOWN_PATTERN;
 unsigned int clock_minute_bitmap=0xFFFF;
+byte alarm_indicator_bitmap=0x00;
+#define ALARM_INDICATOR_1_MASK B10000001
+#define ALARM_INDICATOR_2_MASK B00100000
+#define ALARM_INDICATOR_3_MASK B01000010
+#define ALARM_INDICATOR_4_MASK B00000100
+
+#define ALARM_INDICATOR_2_4_MASK B00100100
+
 
 LedControl led8x8=LedControl(LED8X8_DATAIN_PIN,LED8X8_CLK_PIN,LED8X8_LOAD_PIN,LED8X8_COUNT);
 
@@ -39,12 +47,12 @@ void output_matrix_displayUpdate() {
 
     /* Add elemens of hour and minute bitmap to row pattern */
     /* map=0  H7  H6  H5  H4  H3  H2  H1  H0 
-     *     1  H27                         H8
-     *     2  H26     M3  M2  M1  M0      H9
+     *     1  H27     A2          A4      H8
+     *     2  H26 A3  M3  M2  M1  M0  A3  H9
      *     3  H25     M11         M4      H10
      *     4  H24     M10         M5      H11
-     *     5  H23     M9  M8  M7  M6      H12
-     *     6  H22                         H13
+     *     5  H23 A1  M9  M8  M7  M6  A1  H12
+     *     6  H22     A2          A4      H13
      *     7  H21 H20 H19 H18 H17 H16 H15 H14
      *     
      *     Minutt bits    = cba9876543210
@@ -56,9 +64,11 @@ void output_matrix_displayUpdate() {
     */
     switch(row) {
       case 0: rowPattern=mirroredPattern(clock_hour_bitmap); break;
-      case 1: rowPattern=((clock_hour_bitmap>>20)&B10000000)|((clock_hour_bitmap>>8)&B00000001); break;
+      case 1: rowPattern=((clock_hour_bitmap>>20)&B10000000)|((clock_hour_bitmap>>8)&B00000001)
+                          | (alarm_indicator_bitmap&ALARM_INDICATOR_2_4_MASK); break;
       case 2: rowPattern=((clock_hour_bitmap>>19)&B10000000)|((clock_hour_bitmap>>9)&B00000001)
-                          | mirroredPattern((clock_minute_bitmap<<2)&B00111100); break;
+                          | mirroredPattern((clock_minute_bitmap<<2)&B00111100)
+                          | (alarm_indicator_bitmap&ALARM_INDICATOR_3_MASK);; break;
       case 3: rowPattern=((clock_hour_bitmap>>18) & B10000000)|((clock_hour_bitmap>>10)&B00000001)
                           | ((clock_minute_bitmap>>2 & B00000100))
                           | ((clock_minute_bitmap>>6 & B00100000)); break;
@@ -66,8 +76,11 @@ void output_matrix_displayUpdate() {
                           | ((clock_minute_bitmap>>3 & B00000100))
                           | ((clock_minute_bitmap>>5 & B00100000)); break;
       case 5: rowPattern=((clock_hour_bitmap>>16)&B10000000)|((clock_hour_bitmap>>12)&B00000001)
-                          | ((clock_minute_bitmap>>4)&B00111100); break;
-      case 6: rowPattern=((clock_hour_bitmap>>15)&B10000000)|((clock_hour_bitmap>>13)&B00000001); break;
+                          | ((clock_minute_bitmap>>4)&B00111100)
+                          | ((alarm_indicator_bitmap&ALARM_INDICATOR_1_MASK)<<1)
+                          | ((alarm_indicator_bitmap&ALARM_INDICATOR_1_MASK)>>1); break;
+      case 6: rowPattern=((clock_hour_bitmap>>15)&B10000000)|((clock_hour_bitmap>>13)&B00000001)
+                          | (alarm_indicator_bitmap&ALARM_INDICATOR_2_4_MASK); break;
       case 7: rowPattern=clock_hour_bitmap>>14;break;
       } // switch
    
@@ -81,7 +94,7 @@ void output_matrix_displayUpdate() {
   #endif 
 }
 
-void output_renderClockBitmaps(int minute_of_the_day) {
+void output_renderClockBitmaps(int minute_of_the_day,byte alarmIndicator) {
 
   unsigned int minute_of_the_hour = (minute_of_the_day%60);
   unsigned int hour = (minute_of_the_day/60)%12; /* will be truncated by integer arithmetic */
@@ -134,16 +147,47 @@ void output_renderClockBitmaps(int minute_of_the_day) {
   switchOffBar=(((hour+1)/3)+2)%4;   /* Determine Side to set big bar */ 
   master_pattern |= switchOffPattern<<(switchOffBar*7);  
 
+  /* set alarm off bits in houre pattern */
+
+  /*  8421842<8421842<8421842<8421842<
+  /*  ___-dddddd+cccccc+bbbbbb+aaaaaa+     */
+  /*0 _____4________________2_________     */
+  /*1 _______________1__________2_____     */
+  /*2 ________8__________1____________     */
+  /*3 ____________8________________4__     */
+
+  if(alarmIndicator&ALARM_IDC_REMOVE_FROM_HOUR_MASK) {
+    switch(switchOffBar) {
+      case 0:  master_pattern |= 0x04000200; break;
+      case 1:  master_pattern |= 0x00010020; break;
+      case 2:  master_pattern |= 0x00801000; break;
+      case 3:  master_pattern |= 0x00080004; break;
+    }
+  }
+
   /* write hour bitmap to final memory (Inverted to light up the zeroes) */
   clock_hour_bitmap=~master_pattern;
 
- 
- #ifdef TRACE_OUTPUT_BITSET 
+  #ifdef TRACE_OUTPUT_BITSET 
         Serial.println(0x80000000|simple_pattern,BIN);
-        Serial.print(0x80000000|master_pattern,BIN);
-  #endif    
-
+        Serial.println(0x80000000|master_pattern,BIN);
+  #endif  
+   
+  /* set alarm show bits in ring 3 */
+  if(alarmIndicator&ALARM_IDC_SHOW_ON_RING3_MASK && ((
+    alarmIndicator&ALARM_IDC_BLINK_MASK)==0|| millis()%1000>500) ) {
+    switch(switchOffBar) {
+      case 0: alarm_indicator_bitmap=ALARM_INDICATOR_3_MASK;break;
+      case 1: alarm_indicator_bitmap=ALARM_INDICATOR_4_MASK;break;
+      case 2: alarm_indicator_bitmap=ALARM_INDICATOR_1_MASK;break;
+      case 3: alarm_indicator_bitmap=ALARM_INDICATOR_2_MASK;break;
+    }
+  } else alarm_indicator_bitmap=0x00;
   
+  #ifdef TRACE_OUTPUT_BITSET 
+        Serial.println(0x80|alarm_indicator_bitmap,BIN);
+  #endif 
+
    /* *************
     *    Minute
     * ************  */
