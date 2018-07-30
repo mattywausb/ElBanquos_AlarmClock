@@ -24,7 +24,8 @@
 
 #define FIX_BAND     RADIO_BAND_FM   ///< The band that will be tuned by this sketch is FM.
 #define FIX_STATION  10260            // FRITZ in Berlin
-#define FINAL_VOLUME   8               ///< The volume that will finally be set by this sketch is level 8.
+//#define FIX_STATION  9580            // Radio 1 in Berlin
+#define FINAL_VOLUME   15               ///< The volume that will finally be set by this sketch is level 8.
 
 #define RDS_UPTODATE_THRESHOLD 50000  // Milliseconds we declare our information as actual
 

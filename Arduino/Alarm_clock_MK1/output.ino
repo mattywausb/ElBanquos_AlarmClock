@@ -109,10 +109,11 @@ void output_renderClockBitmaps(int minute_of_the_day,byte alarmIndicator) {
 
   unsigned int minute_of_the_hour = (minute_of_the_day%60);
   unsigned int hour = (minute_of_the_day/60)%12; /* will be truncated by integer arithmetic */
-  unsigned int switchOffBar=0;
+  unsigned int counterBarPosition=0;
   unsigned long master_pattern=0;
   unsigned long simple_pattern=3;
-  const unsigned long switchOffPattern=B01111110;
+  const unsigned long fullCounterBarPattern =B01111110;
+  const unsigned long alarmCounterBarPattern=B00000000;
 
   #ifdef TRACE_OUTPUT_CLOCK_BITSET 
         Serial.print(hour);Serial.print(":");Serial.println(minute_of_the_hour);
@@ -157,8 +158,13 @@ void output_renderClockBitmaps(int minute_of_the_day,byte alarmIndicator) {
                   | (((simple_pattern<<4) &(simple_pattern<<3)&  0x00200000)) ;  /* left lower corner */       
 
 
-  switchOffBar=(((hour+1)/3)+2)%4;   /* Determine Side to set big bar */ 
-  master_pattern |= switchOffPattern<<(switchOffBar*7);  
+  /* place counterBar bits according to alarm indicator */
+  counterBarPosition=(((hour+1)/3)+2)%4;   /* Determine Side to set big bar */ 
+
+   if(alarmIndicator&ALARM_IDC_SHOW_MASK && ((
+    alarmIndicator&ALARM_IDC_BLINK_MASK)==0|| millis()%1000>500) ) 
+        master_pattern |= alarmCounterBarPattern<<(counterBarPosition*7);  
+   else master_pattern |= fullCounterBarPattern<<(counterBarPosition*7);  
 
   /* set alarm off bits in houre pattern */
 
@@ -170,14 +176,13 @@ void output_renderClockBitmaps(int minute_of_the_day,byte alarmIndicator) {
   /*3 ____________8________________4__     */
 
   if(alarmIndicator&ALARM_IDC_REMOVE_FROM_HOUR_MASK) {
-    switch(switchOffBar) {
+    switch(counterBarPosition) {
       case 0:  master_pattern |= 0x04000200; break;
       case 1:  master_pattern |= 0x00010020; break;
       case 2:  master_pattern |= 0x00801000; break;
       case 3:  master_pattern |= 0x00080004; break;
     }
   }
-
   /* write hour bitmap to final memory (Inverted to light up the zeroes) */
   clock_hour_bitmap=~master_pattern;
 
@@ -186,16 +191,8 @@ void output_renderClockBitmaps(int minute_of_the_day,byte alarmIndicator) {
         Serial.println(0x80000000|master_pattern,BIN);
   #endif  
    
-  /* set alarm show bits in ring 3 */
-  if(alarmIndicator&ALARM_IDC_SHOW_MASK && ((
-    alarmIndicator&ALARM_IDC_BLINK_MASK)==0|| millis()%1000>500) ) {
-    switch(switchOffBar) {
-      case 0: flag_indicator_bitmap=ALARM_INDICATOR_3_MASK;break;
-      case 1: flag_indicator_bitmap=ALARM_INDICATOR_4_MASK;break;
-      case 2: flag_indicator_bitmap=ALARM_INDICATOR_1_MASK;break;
-      case 3: flag_indicator_bitmap=ALARM_INDICATOR_2_MASK;break;
-    }
-  } else flag_indicator_bitmap=0x00;
+
+
 
   /* set afternoon flag when showing alarms and time is 12:00 or above */
   if(alarmIndicator&ALARM_IDC_SHOW_MASK && minute_of_the_day>=720)   flag_indicator_bitmap|=AFTERNOON_INDICATOR_MASK;
@@ -211,10 +208,11 @@ void output_renderClockBitmaps(int minute_of_the_day,byte alarmIndicator) {
 
   if(alarmIndicator&ALARM_IDC_SHOW_MASK) {
     output_renderMinuteHighresBitmaps(minute_of_the_hour,true) ;                  
-  } else { /* create our simple minute display format *
+  } else { /* create our simple minute display format */
     simple_pattern=0x0db6;                                /* _24_ */                                                       /* 8  1 */                                                       /* 4  2 */
                                                           /* _18_ */
-    if(minute_of_the_hour <MINUTE_FULL_CIRCLE_THRESHOLD) simple_pattern>>=(4-(minute_of_the_hour)/15)*3;
+    if(minute_of_the_hour >MINUTE_FULL_CIRCLE_THRESHOLD) simple_pattern>>=(4-(minute_of_the_hour)/15)*3;
+
     /* move 12 o clock line to bit 0-3 */
     master_pattern=(simple_pattern<<3)|((simple_pattern>>9)&B00001111);
     

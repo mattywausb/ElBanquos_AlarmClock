@@ -1,7 +1,7 @@
 #define TRACE_ON 1
 
 /* Parameters for Display preferences */
-#define MINUTE_FULL_CIRCLE_THRESHOLD 55  // Minute that will show full circle
+#define MINUTE_FULL_CIRCLE_THRESHOLD 4  // Minute until we will show full circle
 #define MINUTE_SHIFT_THRESHOLD 45        // Minute that will shift hour gap by 1 pixel
 
 #define SECONDS_UNTIL_FALLBACK_LONG 15   // Number of seconds the clock will wait before falling back 
@@ -21,9 +21,9 @@
 /* Global necessary constants */
 
 #define ALARM_INDICATOR_OFF  B00000001
-#define ALARM_INDICATOR_EDIT B00000111
+#define ALARM_INDICATOR_EDIT B00000110
 #define ALARM_INDICATOR_ON   B00000000
-#define ALARM_INDICATOR_SHOW B00000011
+#define ALARM_INDICATOR_SHOW B00000010
 #define SLEEP_INDICATOR_SHOW B10000000
 
 /* Dont use the following outside Output, just placed here for convinience*/

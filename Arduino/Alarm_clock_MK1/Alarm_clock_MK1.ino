@@ -86,7 +86,7 @@ void enter_STATE_IDLE(){
 
 void process_STATE_IDLE(){
  if(input_snoozeGotPressed()) {     
-  if(clock_getCurrentTime()==TIME_UNKNOWN) return;  /* Dont start sleep when time is not settled */ 
+ // if(clock_getCurrentTime()==TIME_UNKNOWN) return;  /* Dont start sleep when time is not settled */ 
   /* TBD:dont start sleep when alarm is running */
   enter_STATE_SLEEP_SET();
   }
