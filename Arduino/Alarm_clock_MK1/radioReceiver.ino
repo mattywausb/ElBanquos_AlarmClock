@@ -27,6 +27,7 @@
 #define FIX_STATION  10260            // FRITZ in Berlin
 //#define FIX_STATION  9580            // Radio 1 in Berlin
 #define FINAL_VOLUME   15               ///< The volume that will finally be set by this sketch is level 8.
+#define FADE_STEP_INTERVAL  3500      // milliseconds to wait until next fade step
 
 #define RDS_UPTODATE_THRESHOLD 50000  // Milliseconds we declare our information as actual
 
@@ -43,12 +44,13 @@ byte radio_operation_flags=0;
 
 int radio_rdsTimeInfo=-1; // Time of day in minutes, -1= no time available
 unsigned long  radio_lastRdsCatchTime=0;
+unsigned long  radio_lastFadeFrameTime=0;
 char radio_lastStationName[20]="<unknown>";
 
 /* interface */
 int radio_getLastRdsTimeInfo() { 
-    #ifdef DEBUG_RDS_MOCKUP
-  return 16*60+29;
+  #ifdef DEBUG_RDS_MOCKUP
+     return 16*60+29;
   #endif
   return radio_rdsTimeInfo;
   };
@@ -71,6 +73,14 @@ void radio_setRdsScanActive(bool flag)
 bool radio_isPlaying()
 {
   return (bitRead(radio_operation_flags,RADIO_FLAG_PLAY)|bitRead(radio_operation_flags,RADIO_FLAG_FADE_IN))>0;
+}
+
+void radio_fadeIn() {
+    if(bitRead (radio_operation_flags,RADIO_FLAG_PLAY)) return;
+    bitClear(radio_operation_flags,RADIO_FLAG_FADE_OUT);
+    bitSet(radio_operation_flags,RADIO_FLAG_FADE_IN);
+    bitSet(radio_operation_flags,RADIO_FLAG_PLAY);    
+    radio_lastFadeFrameTime=millis();
 }
 
 void radio_switchOn(){
@@ -152,6 +162,7 @@ void radio_setup() {
   radio.setVolume(0);
   radio.setBandFrequency(FIX_BAND, FIX_STATION);
   radio.setMute(true);
+  radio.setBassBoost(true);
   radio.setMono(true);
 
   // initialize RDS Features
@@ -175,6 +186,12 @@ void radio_loop_tick() {
          radio.checkRDS();
   }
   digitalWrite(LED_BUILTIN,radio_operation_flags>0);
+
+  if(bitRead(radio_operation_flags,RADIO_FLAG_FADE_IN) && millis()-radio_lastFadeFrameTime>FADE_STEP_INTERVAL) {
+    radio_lastFadeFrameTime=millis();
+    if(radio.getVolume()<FINAL_VOLUME) radio.setVolume(radio.getVolume()+1);
+    else bitClear(radio_operation_flags,RADIO_FLAG_FADE_IN);
+  }
   
   #ifdef TRACE_RADIO
 //      Serial.println("radio loop tick");

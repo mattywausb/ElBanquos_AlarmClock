@@ -14,8 +14,6 @@
 
 const unsigned long demo_delaytime=400;
 
-
-
 /* Some general knowledge about time */
 #define MINUTES_PER_DAY 1440
 #define MILLIES_PER_DAY 86400000
@@ -37,6 +35,11 @@ CLOCK_STATE clock_state = STATE_IDLE; ///< The state variable is used for parsin
 #define TIME_UNKNOWN -1
 #define TRIGGER_IS_OFF -2
 
+#define RDS_TRUST_GOOD 20         // Highest trust you can get
+#define RDS_TRUST_ACCEPTABLE 10   // Minimal trust to be used
+#define RDS_TRUST_CANDIDATE 4     // Number of consecutive occurences to be protected from instant replacement
+#define RDS_DERIVATION_TOLERANCE 3 // Minutes of derivation, we accept as correction
+#define RDS_SCAN_COOLDOWN_TIME  3000   // Milliseconds before we evaluate  the next RDS Time Telegram
 
 unsigned long clock_sync_time=millis();
 int clock_reference_time=-1;
@@ -47,7 +50,7 @@ int clock_alarm_stop_time=TRIGGER_IS_OFF;
 int clock_snooze_stop_time=TRIGGER_IS_OFF;
 byte clock_alarm_stopprocedure_progress=0;
 unsigned long clock_last_wakeup_stop_millis=0;  
-
+byte clock_rds_trust=0;
 
 
 /* ************************************************************
@@ -56,7 +59,7 @@ unsigned long clock_last_wakeup_stop_millis=0;
  */
 
 int clock_getCurrentTime() {
-  if(clock_reference_time==TIME_UNKNOWN) return TIME_UNKNOWN;
+  if(clock_rds_trust <RDS_TRUST_ACCEPTABLE) return TIME_UNKNOWN;
   return (((millis()-clock_sync_time)/60000)+clock_reference_time)%MINUTES_PER_DAY;
 }
 
@@ -73,11 +76,48 @@ int clock_getAgeOfReference(){
 }
 
 void clock_setReferenceTime(int measured_time) {
-  clock_sync_time=millis();
-  clock_reference_time=measured_time;
+static unsigned long last_measure_time=0;
+
+  if(measured_time>MINUTES_PER_DAY) return; /* this is definietly rubbish */
+  if(millis()-last_measure_time < RDS_SCAN_COOLDOWN_TIME) return; /* We wait for values over some time */
+  last_measure_time=millis();
+  
+  int previous_measure_now=(((last_measure_time-clock_sync_time)/60000)+clock_reference_time)%MINUTES_PER_DAY;
+  
+   #ifdef TRACE_CLOCK
+      Serial.print("RDS:");
+      trace_printTime(measured_time);
+   #endif
+     
+  if(abs(measured_time-previous_measure_now)<RDS_DERIVATION_TOLERANCE) { /* RDS delivered in expected range  */
+     if(clock_rds_trust<RDS_TRUST_GOOD) clock_rds_trust+=1;
+      clock_sync_time=last_measure_time;
+      clock_reference_time=measured_time;    
+      #ifdef TRACE_CLOCK
+       Serial.print("\taccept");
+      #endif 
+  } else {
+
+     if(clock_rds_trust>=RDS_TRUST_CANDIDATE) {
+      clock_rds_trust-=2; 
+      #ifdef TRACE_CLOCK
+       Serial.print("\treject");
+      #endif    
+     } else  { /* Only, when our trust has gone , we try the new RDS value */
+      clock_sync_time=last_measure_time;
+      clock_reference_time=measured_time;        
+      clock_rds_trust=0;
+      #ifdef TRACE_CLOCK
+       Serial.print("\tswitch");
+      #endif    
+     }
+
+  }
   #ifdef TRACE_CLOCK
-        Serial.println("Reference update");
+    Serial.print(" trust:");
+    Serial.println(clock_rds_trust);
   #endif
+
 }
 
 
@@ -107,23 +147,22 @@ void process_STATE_IDLE(){
   if(input_selectGotPressed()) {enter_STATE_ALARM_CHANGE();return;}
  
   /* Check RDS Data when necessary */
-  if(clock_getAgeOfReference()>REFERENCE_AGE_FOR_CHECK) {
+  if(clock_getAgeOfReference()>REFERENCE_AGE_FOR_CHECK ||
+     clock_rds_trust<RDS_TRUST_GOOD) {
     radio_setRdsScanActive(true);
     if(radio_getRdsIsUptodate()) { /* we got an update */
        clock_setReferenceTime(radio_getLastRdsTimeInfo());
-       radio_setRdsScanActive(false);       
     }
-  } 
+  }  else radio_setRdsScanActive(false);       
 
-  output_renderClockBitmaps(clock_getCurrentTime(),input_masterSwitchIsSet()?ALARM_INDICATOR_ON:ALARM_INDICATOR_OFF);
-  
+  output_renderClockBitmaps(clock_getCurrentTime(),input_masterSwitchIsSet()?ALARM_INDICATOR_ON:ALARM_INDICATOR_OFF);  
 }
 
 /* *************** STATE_WAKEUP ***************** */
 
 void enter_STATE_WAKEUP(){
    clock_state=STATE_WAKEUP;
-   if(clock_alarm_stop_time==TRIGGER_IS_OFF) radio_switchOn();
+   if(clock_alarm_stop_time==TRIGGER_IS_OFF) radio_fadeIn();
    clock_sleep_stop_time=TRIGGER_IS_OFF;
    clock_alarm_stop_time=clock_getCurrentTime()+ALARM_DURATION ;
    clock_snooze_stop_time=TRIGGER_IS_OFF;
@@ -387,7 +426,7 @@ void setup() {
   input_setup(0, MINUTES_PER_DAY-1,15); /* Encoder Range 24 hoursis,stepping quater hours */
   radio_setup();
 
-  clock_alarm_time[0]=DEFAULT_ALARM_TIME; /* Fall back alarm = 6:30 */
+  clock_alarm_time[0]=DEFAULT_ALARM_TIME; /* Fall back alarm */
 }
 
 
