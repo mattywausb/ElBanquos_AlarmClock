@@ -94,6 +94,9 @@ byte input_snoozeGotPressed() {
  return (debounced_state&INPUT_SNOOZE_MASK)==INPUT_SNOOZE_PRESSED_PATTERN; ; /* We switched from unpressed to pressed */;
 }
 
+bool input_masterSwitchIsSet() {
+  return true; // Mockup
+}
 bool input_checkEncoderChangeEvent(){
   return input_encoder_change_event;
 }

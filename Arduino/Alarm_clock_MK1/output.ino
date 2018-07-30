@@ -6,6 +6,7 @@
 //#define TRACE_OUTPUT_FINAL 1
 //#define TRACE_OUTPUT_CLOCK_BITSET 1
 //#define TRACE_OUTPUT_SLEEP_BITSET 1
+//#define TRACE_OUTPUT_RING3_BITSET 1
 #endif
 
 /* Parameters for Device Connection */
@@ -24,12 +25,10 @@
 #define TIME_UNKNOWN_PATTERN 0x0cd9b366;
 
 unsigned long clock_hour_bitmap=TIME_UNKNOWN_PATTERN;
+unsigned long matrix_ring3_bitmap=0;
 unsigned int clock_minute_bitmap=0xFFFF;
 byte flag_indicator_bitmap=0x00;
-#define ALARM_INDICATOR_1_MASK B10000001
-#define ALARM_INDICATOR_2_MASK B00100000
-#define ALARM_INDICATOR_3_MASK B01000010
-#define ALARM_INDICATOR_4_MASK B00000100
+
 #define AFTERNOON_INDICATOR_MASK B00011000
 
 
@@ -51,13 +50,13 @@ void output_matrix_displayUpdate() {
   for(int row=0;row<8;row++) {
 
     /* Add elemens of hour and minute bitmap to row pattern */
-    /* map=0  H7  H6  H5  H4  H3  H2  H1  H0 
-     *     1  H27     A2          A4      H8
-     *     2  H26 A3  M3  M2  M1  M0  A3  H9
-     *     3  H25     M11         M4      H10
-     *     4  H24     M10         M5      H11
-     *     5  H23 A1  M9  M8  M7  M6  A1  H12
-     *     6  H22     A2          A4      H13
+    /* map=0  H0  H1  H2  H3  H4  H5  H6  H7 
+     *     1  H27 R0  R1  R2  R3  R4  R5  H8
+     *     2  H26 R9  M0  M1  M2  M3  R6  H9
+     *     3  H25 R8  M11         M4  R7  H10
+     *     4  H24 R7  M10         M5  R8  H11
+     *     5  H23 R6  M9  M8  M7  M6  R9  H12
+     *     6  H22 R5  R4  R3  R2  R1  RA  H13
      *     7  H21 H20 H19 H18 H17 H16 H15 H14
      *     
      *     Minutt bits    = cba9876543210
@@ -70,24 +69,33 @@ void output_matrix_displayUpdate() {
     switch(row) {
       case 0: rowPattern=mirroredPattern(clock_hour_bitmap); break;
       case 1: rowPattern=((clock_hour_bitmap>>20)&B10000000)|((clock_hour_bitmap>>8)&B00000001)
-                          | (flag_indicator_bitmap&ALARM_INDICATOR_2_4_MASK); break;
+                          | mirroredPattern(matrix_ring3_bitmap<<1)&B01111110
+                          ; break;
       case 2: rowPattern=((clock_hour_bitmap>>19)&B10000000)|((clock_hour_bitmap>>9)&B00000001)
-                          | mirroredPattern((clock_minute_bitmap<<2)&B00111100)
-                          | (flag_indicator_bitmap&ALARM_INDICATOR_3_MASK);; break;
+                          | ((matrix_ring3_bitmap>>5) & B00000010)
+                          | ((matrix_ring3_bitmap>>13)& B01000000)
+                          |  mirroredPattern(clock_minute_bitmap<<2) & B00111100
+                          ; break;
       case 3: rowPattern=((clock_hour_bitmap>>18) & B10000000)|((clock_hour_bitmap>>10)&B00000001)
-                          | ((clock_minute_bitmap>>2 & B00000100))
-                          | ((clock_minute_bitmap>>6 & B00100000))
+                          | ((matrix_ring3_bitmap>>6) & B00000010)
+                          | ((matrix_ring3_bitmap>>12)& B01000000)
+                          | ((clock_minute_bitmap>>2) & B00000100)
+                          | ((clock_minute_bitmap>>6) & B00100000)
                           | (flag_indicator_bitmap&AFTERNOON_INDICATOR_MASK); break;
       case 4: rowPattern=((clock_hour_bitmap>>17)&B10000000)|((clock_hour_bitmap>>11)&B00000001)
+                          | ((matrix_ring3_bitmap>>7) & B00000010)
+                          | ((matrix_ring3_bitmap>>11)& B01000000)
                           | ((clock_minute_bitmap>>3 & B00000100))
                           | ((clock_minute_bitmap>>5 & B00100000))
                           | (flag_indicator_bitmap&AFTERNOON_INDICATOR_MASK); break;
       case 5: rowPattern=((clock_hour_bitmap>>16)&B10000000)|((clock_hour_bitmap>>12)&B00000001)
+                          | ((matrix_ring3_bitmap>>8) & B00000010)
+                          | ((matrix_ring3_bitmap>>10)& B01000000)
                           | ((clock_minute_bitmap>>4)&B00111100)
-                          | ((flag_indicator_bitmap&ALARM_INDICATOR_1_MASK)<<1)
-                          | ((flag_indicator_bitmap&ALARM_INDICATOR_1_MASK)>>1); break;
+                          ; break;
       case 6: rowPattern=((clock_hour_bitmap>>15)&B10000000)|((clock_hour_bitmap>>13)&B00000001)
-                          | (flag_indicator_bitmap&ALARM_INDICATOR_2_4_MASK); break;
+                          | ((matrix_ring3_bitmap>>9)&B01111110);
+                           break;
       case 7: rowPattern=clock_hour_bitmap>>14;break;
       } // switch
    
@@ -114,11 +122,14 @@ void output_renderClockBitmaps(int minute_of_the_day,byte alarmIndicator) {
   unsigned long simple_pattern=3;
   const unsigned long fullCounterBarPattern =B01111110;
   const unsigned long alarmCounterBarPattern=B00000000;
+  const unsigned long snoozeCounterBarPattern=B00111100;
 
   #ifdef TRACE_OUTPUT_CLOCK_BITSET 
         Serial.print(hour);Serial.print(":");Serial.println(minute_of_the_hour);
   #endif 
 
+  flag_indicator_bitmap=0;
+  matrix_ring3_bitmap=0;
   if(minute_of_the_day<0) {
     clock_hour_bitmap=TIME_UNKNOWN_PATTERN;
                         /* 000000010 01001001 */
@@ -164,7 +175,9 @@ void output_renderClockBitmaps(int minute_of_the_day,byte alarmIndicator) {
    if(alarmIndicator&ALARM_IDC_SHOW_MASK && ((
     alarmIndicator&ALARM_IDC_BLINK_MASK)==0|| millis()%1000>500) ) 
         master_pattern |= alarmCounterBarPattern<<(counterBarPosition*7);  
-   else master_pattern |= fullCounterBarPattern<<(counterBarPosition*7);  
+   else if((alarmIndicator&ALARM_INDICATOR_SNOOZE) && millis()%2000>1000) 
+         master_pattern |= snoozeCounterBarPattern<<(counterBarPosition*7); 
+    else master_pattern |= fullCounterBarPattern<<(counterBarPosition*7);  
 
   /* set alarm off bits in houre pattern */
 
@@ -248,11 +261,44 @@ void output_renderMinuteHighresBitmaps(int minutes,bool zeroIs60)
         Serial.println(0x8000|clock_minute_bitmap,BIN);
     #endif
 }
-void output_renderSleepBitmaps(int minutes) {
+
+/* ********************************************************************+
+ *            Render ring3 progress
+ * ********************************************************************+
+ */
+
+ void output_renderRing3Progress(int value) {
+
+  if(value==0) matrix_ring3_bitmap=0;
+  if(value>0) matrix_ring3_bitmap=0x000fffff>>(20-value);
+  if(value<0) matrix_ring3_bitmap=0x000fffff<<(20+value);
+    #ifdef TRACE_OUTPUT_RING3_BITSET 
+
+        Serial.print(value);
+        Serial.print("\t");
+        Serial.println(0x80000000|matrix_ring3_bitmap,BIN);
+    #endif
+ }
+
+/* ********************************************************************+
+ *           Scenes
+ * ********************************************************************+
+ */
+
+void output_renderStopProcedureScene(int value) {
+    clock_hour_bitmap=0;
+    flag_indicator_bitmap=AFTERNOON_INDICATOR_MASK;
+    clock_minute_bitmap=0;
+    output_renderRing3Progress(value);
+}
+
+void output_renderSleepScene(int minutes) {
     clock_hour_bitmap=0;
     flag_indicator_bitmap=0;
+    matrix_ring3_bitmap=0;
     output_renderMinuteHighresBitmaps(minutes,false);
 }
+
 
 /* ********************************************************************+
  *            Animations
@@ -271,7 +317,7 @@ void output_renderSleepBitmaps(int minutes) {
    * 0         X         
    */
 
-   byte colPattern[7]={0x0c,0x06,0x03,0x06,0x1c,0x78,0xe0};
+   const byte colPattern[7]={0x0c,0x06,0x03,0x06,0x1c,0x78,0xe0};
    led8x8.clearDisplay(LED8X8_PANEL_0); 
    for(byte i=0;i<sizeof(colPattern);i++){
        led8x8.setColumn(LED8X8_PANEL_0,i,colPattern[i]);     
@@ -287,7 +333,10 @@ void output_sequence_escape(){
    }
    delay(100);  
  }
- 
+
+ void output_sequence_snooze(){
+   output_sequence_acknowlegde();
+ }
 
 /* *********************************************************************
 /*                    internal helpers                                  */

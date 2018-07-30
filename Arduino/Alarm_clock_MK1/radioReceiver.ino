@@ -16,7 +16,8 @@
 #include <RDSParser.h>
 
 #ifdef TRACE_ON
-#define TRACE_RADIO 1
+//#define TRACE_RADIO 1
+#define DEBUG_RDS_MOCKUP 1
 #endif
 
 
@@ -45,9 +46,18 @@ unsigned long  radio_lastRdsCatchTime=0;
 char radio_lastStationName[20]="<unknown>";
 
 /* interface */
-int radio_getLastRdsTimeInfo() { return radio_rdsTimeInfo;};
+int radio_getLastRdsTimeInfo() { 
+    #ifdef DEBUG_RDS_MOCKUP
+  return 16*60+29;
+  #endif
+  return radio_rdsTimeInfo;
+  };
 
 bool radio_getRdsIsUptodate() {
+
+  #ifdef DEBUG_RDS_MOCKUP
+  return true;
+  #endif
   if(radio_lastRdsCatchTime==0) return false; // obviously we never have seen anything
   if(millis()-radio_lastRdsCatchTime <  RDS_UPTODATE_THRESHOLD)  return true;
   return false;

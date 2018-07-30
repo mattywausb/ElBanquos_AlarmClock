@@ -4,6 +4,11 @@
 #define MINUTE_FULL_CIRCLE_THRESHOLD 4  // Minute until we will show full circle
 #define MINUTE_SHIFT_THRESHOLD 45        // Minute that will shift hour gap by 1 pixel
 
+#define ALARM_DURATION  4  // Number of Minutes the Radio will play after last alarm trigger
+#define SNOOZE_DURATION 1   // Number of Minutes for the snooze time
+
+#define DEFAULT_ALARM_TIME 16*60+30 
+
 #define SECONDS_UNTIL_FALLBACK_LONG 15   // Number of seconds the clock will wait before falling back 
 #define SECONDS_UNTIL_FALLBACK_SHORT 5   // Number of seconds the clock will wait before falling back 
 
@@ -24,7 +29,8 @@
 #define ALARM_INDICATOR_EDIT B00000110
 #define ALARM_INDICATOR_ON   B00000000
 #define ALARM_INDICATOR_SHOW B00000010
-#define SLEEP_INDICATOR_SHOW B10000000
+#define ALARM_INDICATOR_SNOOZE  B10000000
+
 
 /* Dont use the following outside Output, just placed here for convinience*/
 #define ALARM_IDC_REMOVE_FROM_HOUR_MASK  B00000001
