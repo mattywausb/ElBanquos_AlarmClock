@@ -24,10 +24,11 @@
 #define ALARM_INDICATOR_EDIT B00000111
 #define ALARM_INDICATOR_ON   B00000000
 #define ALARM_INDICATOR_SHOW B00000011
+#define SLEEP_INDICATOR_SHOW B10000000
 
 /* Dont use the following outside Output, just placed here for convinience*/
 #define ALARM_IDC_REMOVE_FROM_HOUR_MASK  B00000001
-#define ALARM_IDC_SHOW_ON_RING3_MASK     B00000010
+#define ALARM_IDC_SHOW_MASK              B00000010
 #define ALARM_IDC_BLINK_MASK             B00000100
 
 

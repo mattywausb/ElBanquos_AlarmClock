@@ -1,8 +1,11 @@
 #include "mainSettings.h"
 
+#include "LedControl.h"
+
 #ifdef TRACE_ON
 //#define TRACE_OUTPUT_FINAL 1
-//#define TRACE_OUTPUT_BITSET 1
+//#define TRACE_OUTPUT_CLOCK_BITSET 1
+//#define TRACE_OUTPUT_SLEEP_BITSET 1
 #endif
 
 /* Parameters for Device Connection */
@@ -98,6 +101,10 @@ void output_matrix_displayUpdate() {
   #endif 
 }
 
+/* ********************************************************************+
+ *            Render Clock Bitmaps
+ * ********************************************************************+
+ */
 void output_renderClockBitmaps(int minute_of_the_day,byte alarmIndicator) {
 
   unsigned int minute_of_the_hour = (minute_of_the_day%60);
@@ -107,7 +114,7 @@ void output_renderClockBitmaps(int minute_of_the_day,byte alarmIndicator) {
   unsigned long simple_pattern=3;
   const unsigned long switchOffPattern=B01111110;
 
-  #ifdef TRACE_OUTPUT_BITSET 
+  #ifdef TRACE_OUTPUT_CLOCK_BITSET 
         Serial.print(hour);Serial.print(":");Serial.println(minute_of_the_hour);
   #endif 
 
@@ -118,6 +125,7 @@ void output_renderClockBitmaps(int minute_of_the_day,byte alarmIndicator) {
     flag_indicator_bitmap=0x00;
     return;
   }
+
   /* ********** *
    *   Hour
    * **********
@@ -173,13 +181,13 @@ void output_renderClockBitmaps(int minute_of_the_day,byte alarmIndicator) {
   /* write hour bitmap to final memory (Inverted to light up the zeroes) */
   clock_hour_bitmap=~master_pattern;
 
-  #ifdef TRACE_OUTPUT_BITSET 
+  #ifdef TRACE_OUTPUT_CLOCK_BITSET 
         Serial.println(0x80000000|simple_pattern,BIN);
         Serial.println(0x80000000|master_pattern,BIN);
   #endif  
    
   /* set alarm show bits in ring 3 */
-  if(alarmIndicator&ALARM_IDC_SHOW_ON_RING3_MASK && ((
+  if(alarmIndicator&ALARM_IDC_SHOW_MASK && ((
     alarmIndicator&ALARM_IDC_BLINK_MASK)==0|| millis()%1000>500) ) {
     switch(switchOffBar) {
       case 0: flag_indicator_bitmap=ALARM_INDICATOR_3_MASK;break;
@@ -190,32 +198,98 @@ void output_renderClockBitmaps(int minute_of_the_day,byte alarmIndicator) {
   } else flag_indicator_bitmap=0x00;
 
   /* set afternoon flag when showing alarms and time is 12:00 or above */
-  if(alarmIndicator&ALARM_IDC_SHOW_ON_RING3_MASK && minute_of_the_day>=720)   flag_indicator_bitmap|=AFTERNOON_INDICATOR_MASK;
+  if(alarmIndicator&ALARM_IDC_SHOW_MASK && minute_of_the_day>=720)   flag_indicator_bitmap|=AFTERNOON_INDICATOR_MASK;
   
-  #ifdef TRACE_OUTPUT_BITSET 
-        Serial.println(0x80|flag_indicator_bitmap,BIN);
+  #ifdef TRACE_OUTPUT_CLOCK_BITSET 
+        Serial.print(0x80|flag_indicator_bitmap,BIN);
   #endif 
+
 
    /* *************
     *    Minute
     * ************  */
 
-                     
-  simple_pattern=0x0db6;                                /* _24_ */                                                       /* 8  1 */                                                       /* 4  2 */
-                                                        /* _18_ */
-  if(minute_of_the_hour <MINUTE_FULL_CIRCLE_THRESHOLD) simple_pattern>>=(4-(minute_of_the_hour)/15)*3;
-  /* move 12 o clock line to bit 0-3 */
-  master_pattern=(simple_pattern<<3)|((simple_pattern>>9)&B00001111);
+  if(alarmIndicator&ALARM_IDC_SHOW_MASK) {
+    output_renderMinuteHighresBitmaps(minute_of_the_hour,true) ;                  
+  } else { /* create our simple minute display format *
+    simple_pattern=0x0db6;                                /* _24_ */                                                       /* 8  1 */                                                       /* 4  2 */
+                                                          /* _18_ */
+    if(minute_of_the_hour <MINUTE_FULL_CIRCLE_THRESHOLD) simple_pattern>>=(4-(minute_of_the_hour)/15)*3;
+    /* move 12 o clock line to bit 0-3 */
+    master_pattern=(simple_pattern<<3)|((simple_pattern>>9)&B00001111);
+    
+    clock_minute_bitmap=master_pattern;
   
-  clock_minute_bitmap=master_pattern;
-
-  #ifdef TRACE_OUTPUT_BITSET 
-        Serial.print("\t");
-        Serial.println(0x8000|master_pattern,BIN);
-  #endif
-  
+    #ifdef TRACE_OUTPUT_CLOCK_BITSET 
+          Serial.print("\t");
+          Serial.println(0x8000|master_pattern,BIN);
+    #endif
+ }
 };
+/* ********************************************************************+
+ *            Render Highres Minute Bitmaps
+ * ********************************************************************+
+ */
 
+void output_renderMinuteHighresBitmaps(int minutes,bool zeroIs60)
+{ 
+
+    unsigned int simple_pattern=0x0fff>>(12-(minutes/5));
+    /* ____BA9876543210 */
+    /* ____dd+cc+bb+aa+ */
+    /* ____9876543210BA */
+     
+    if(minutes>0) clock_minute_bitmap=(simple_pattern<<2)|((simple_pattern>>10)&B00000011);
+    else if(zeroIs60) clock_minute_bitmap=0xffff;
+                 else clock_minute_bitmap=0x0249; /* 0000002004008001 */
+    
+
+
+    #ifdef TRACE_OUTPUT_SLEEP_BITSET 
+    Serial.print(minutes);Serial.print(">");
+        Serial.println(0x8000|clock_minute_bitmap,BIN);
+    #endif
+}
+void output_renderSleepBitmaps(int minutes) {
+    clock_hour_bitmap=0;
+    flag_indicator_bitmap=0;
+    output_renderMinuteHighresBitmaps(minutes,false);
+}
+
+/* ********************************************************************+
+ *            Animations
+ * ********************************************************************+
+ */
+
+ void output_sequence_acknowlegde(){
+  /*     8 4 2 1 8 4 2 1
+   * 7                 X    
+   * 6               X X 
+   * 5               X X   
+   * 4             X X     
+   * 3     X       X X  
+   * 2     X X   X X      
+   * 1       X X X      
+   * 0         X         
+   */
+
+   byte colPattern[7]={0x0c,0x06,0x03,0x06,0x1c,0x78,0xe0};
+   led8x8.clearDisplay(LED8X8_PANEL_0); 
+   for(byte i=0;i<sizeof(colPattern);i++){
+       led8x8.setColumn(LED8X8_PANEL_0,i,colPattern[i]);     
+       delay(30);
+   }
+   delay(300);
+ }
+    
+void output_sequence_escape(){
+   for(byte i=0;i<8;i++){
+       led8x8.setRow(LED8X8_PANEL_0,i,0);     
+       delay(20);
+   }
+   delay(100);  
+ }
+ 
 
 /* *********************************************************************
 /*                    internal helpers                                  */
@@ -241,7 +315,9 @@ void output_setup() {
    */
   led8x8.shutdown(LED8X8_PANEL_0,false);
   /* Set the brightness to a medium values */
-  led8x8.setIntensity(LED8X8_PANEL_0,1);
+  led8x8.setIntensity(LED8X8_PANEL_0,0);
   /* and clear the display */
   led8x8.clearDisplay(LED8X8_PANEL_0);
+  output_sequence_acknowlegde();
+  output_sequence_escape();
 }

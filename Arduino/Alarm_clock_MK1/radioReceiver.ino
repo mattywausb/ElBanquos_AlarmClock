@@ -26,7 +26,7 @@
 #define FIX_STATION  10260            // FRITZ in Berlin
 #define FINAL_VOLUME   8               ///< The volume that will finally be set by this sketch is level 8.
 
-#define RDS_UPTODATE_THRESHOLD 50000  // Milliseconds we delary our information as actual
+#define RDS_UPTODATE_THRESHOLD 50000  // Milliseconds we declare our information as actual
 
 // --- State memory and objects
 SI4703 radio;    // Create an instance of Class for Si4703 Chip
@@ -47,7 +47,7 @@ char radio_lastStationName[20]="<unknown>";
 int radio_getLastRdsTimeInfo() { return radio_rdsTimeInfo;};
 
 bool radio_getRdsIsUptodate() {
-  if(radio_lastRdsCatchTime==0) return false; // obviusly we never have seen anything
+  if(radio_lastRdsCatchTime==0) return false; // obviously we never have seen anything
   if(millis()-radio_lastRdsCatchTime <  RDS_UPTODATE_THRESHOLD)  return true;
   return false;
   };
@@ -55,6 +55,26 @@ bool radio_getRdsIsUptodate() {
 void radio_setRdsScanActive(bool flag)
 {
   bitWrite(radio_operation_flags,RADIO_FLAG_RDS,flag);
+}
+
+bool radio_isPlaying()
+{
+  return (bitRead(radio_operation_flags,RADIO_FLAG_PLAY)|bitRead(radio_operation_flags,RADIO_FLAG_FADE_IN))>0;
+}
+
+void radio_switchOn(){
+  bitSet(radio_operation_flags,RADIO_FLAG_PLAY);
+  bitClear(radio_operation_flags,RADIO_FLAG_FADE_IN);
+  bitClear(radio_operation_flags,RADIO_FLAG_FADE_OUT);
+  radio.setMute(false);
+  radio.setVolume(FINAL_VOLUME);
+}
+
+void radio_switchOff(){
+  radio.setVolume(0);
+  bitClear(radio_operation_flags,RADIO_FLAG_PLAY);
+  bitClear(radio_operation_flags,RADIO_FLAG_FADE_IN);
+  bitClear(radio_operation_flags,RADIO_FLAG_FADE_OUT);
 }
 
 /* internal functions */
@@ -143,7 +163,7 @@ void radio_loop_tick() {
   if(bitRead(radio_operation_flags,RADIO_FLAG_RDS)) {
          radio.checkRDS();
   }
-  digitalWrite(LED_BUILTIN,bitRead(radio_operation_flags,RADIO_FLAG_RDS));
+  digitalWrite(LED_BUILTIN,radio_operation_flags>0);
   
   #ifdef TRACE_RADIO
 //      Serial.println("radio loop tick");

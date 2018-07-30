@@ -1,5 +1,5 @@
 //We always have to include the library
-#include "LedControl.h"
+
 
 #include "mainSettings.h"
 
@@ -26,20 +26,19 @@ enum CLOCK_STATE {
   STATE_IDLE, // show time, check for alarms, check age of rds time 
   STATE_ALARM_INFO,  // Show Alarm time
   STATE_ALARM_CHANGE,  // Change and set Alarm time
+  STATE_SLEEP_SET,  // Activate Sleep and change sleep time
   STATE_DEMO  // show fast time progressing
 };
 
 CLOCK_STATE clock_state = STATE_IDLE; ///< The state variable is used for parsing input characters.
 #define TIME_UNKNOWN -1
+#define SLEEP_OFF -2
 
 unsigned long clock_sync_time=millis();
 int clock_reference_time=-1;
 int clock_alarm_time[4]={0,0,0,0};
 byte clock_focussed_alarmIndex=0; 
-
-
-
-
+int clock_sleep_stop_time=SLEEP_OFF;
 
 
 
@@ -86,9 +85,10 @@ void enter_STATE_IDLE(){
 }
 
 void process_STATE_IDLE(){
- if(input_snoozeGotPressed()) {     // SNOOZE = Switch to Demo
-    clock_state=STATE_DEMO; 
-    return;
+ if(input_snoozeGotPressed()) {     
+  if(clock_getCurrentTime()==TIME_UNKNOWN) return;  /* Dont start sleep when time is not settled */ 
+  /* TBD:dont start sleep when alarm is running */
+  enter_STATE_SLEEP_SET();
   }
   
   if(input_checkEncoderChangeEvent()) {enter_STATE_ALARM_INFO();return;}
@@ -122,7 +122,9 @@ void process_STATE_ALARM_INFO(){
         || input_getSecondsSinceLastEvent()> SECONDS_UNTIL_FALLBACK_SHORT) {
             enter_STATE_IDLE(); return;
           }
-
+    
+    if(input_checkEncoderChangeEvent()) input_getEncoderValue(); 
+    
     if(input_selectGotPressed()) {
              enter_STATE_ALARM_CHANGE();return;
              return;
@@ -135,7 +137,7 @@ void process_STATE_ALARM_INFO(){
 
 void enter_STATE_ALARM_CHANGE(){
   clock_state=STATE_ALARM_CHANGE; 
-  input_setEncoderRange(0, MINUTES_PER_DAY-1,15,clock_alarm_time[clock_focussed_alarmIndex]);
+  input_setEncoderRange(0, MINUTES_PER_DAY-1,5,clock_alarm_time[clock_focussed_alarmIndex]);
   output_renderClockBitmaps(input_getEncoderValue(),ALARM_INDICATOR_EDIT);
            #ifdef TRACE_CLOCK
          Serial.println("Entered STATE_ALARM_CHANGE");
@@ -145,12 +147,12 @@ void enter_STATE_ALARM_CHANGE(){
 void process_STATE_ALARM_CHANGE(){
       if(input_snoozeGotPressed() 
              || input_getSecondsSinceLastEvent()> SECONDS_UNTIL_FALLBACK_LONG) {
-             /* tbd: play cancel  sequence */
+             output_sequence_escape();
              enter_STATE_IDLE();return;
           }
 
       if(input_selectGotPressed()) {
-        /* tbd: play store sequence */
+        output_sequence_acknowlegde();
         clock_alarm_time[clock_focussed_alarmIndex]=input_getEncoderValue();
         enter_STATE_IDLE();return;       
       }
@@ -158,6 +160,89 @@ void process_STATE_ALARM_CHANGE(){
       output_renderClockBitmaps(input_getEncoderValue(),ALARM_INDICATOR_EDIT); 
 }
 
+
+/* *************** STATE_SLEEP_SET ***************** */
+
+void enter_STATE_SLEEP_SET(){
+  clock_state=STATE_SLEEP_SET; 
+  int sleepMinutes=45;
+  if(clock_sleep_stop_time!=SLEEP_OFF) sleepMinutes=clock_sleep_stop_time-clock_getCurrentTime();
+  if(sleepMinutes<0) sleepMinutes+MINUTES_PER_DAY;
+  input_setEncoderRange(0, 70,5,sleepMinutes);
+  output_renderSleepBitmaps(input_getEncoderValue());
+  radio_switchOn();
+  #ifdef TRACE_CLOCK
+         Serial.println("Entered STATE_SLEEP_SET");
+  #endif
+}
+
+void process_STATE_SLEEP_SET(){
+  if(input_snoozeGotPressed() )
+  {
+    #ifdef TRACE_CLOCK
+         Serial.println("SLEEP canceled by snooze");
+    #endif
+    radio_switchOff(); /* TBD: only if we are still in a wakeup interval */
+    output_sequence_escape();
+    enter_STATE_IDLE();
+    return;
+  }
+
+  if(input_selectGotPressed() 
+  || input_getSecondsSinceLastEvent()> SECONDS_UNTIL_FALLBACK_SHORT) {
+    if(input_getEncoderValue()>60) {
+      enter_STATE_DEMO();
+      return;
+    }
+    if(input_getEncoderValue()==0) {
+      #ifdef TRACE_CLOCK
+         Serial.println("SLEEP canceled with 0 value");
+      #endif
+       radio_switchOff(); /* TBD: only if we are still in a wakeup interval */
+       clock_sleep_stop_time=SLEEP_OFF;
+       enter_STATE_IDLE();
+      return;
+    }
+    clock_sleep_stop_time=(input_getEncoderValue()+clock_getCurrentTime()) % MINUTES_PER_DAY;
+    output_sequence_acknowlegde();
+    #ifdef TRACE_CLOCK
+         Serial.print("SLEEP active until ");
+         Serial.print(clock_sleep_stop_time/60);
+         Serial.print(":");
+         Serial.println(clock_sleep_stop_time%60);         
+    #endif
+    enter_STATE_IDLE();
+    return;       
+  }
+  output_renderSleepBitmaps(input_getEncoderValue());
+}
+
+/* *************** STATE_DEMO ***************** */
+void enter_STATE_DEMO(){
+  clock_state=STATE_DEMO; 
+  #ifdef TRACE_CLOCK
+         Serial.println("Entered STATE_DEMO");
+  #endif
+}
+
+void process_STATE_DEMO(){
+  static int demo_minutes_of_the_day=0;
+  static unsigned long demo_prev_frame_time=0;
+  
+          if(input_snoozeGotPressed()) {
+            enter_STATE_IDLE();
+            return;  
+          }
+          
+        if(millis()-demo_prev_frame_time> demo_delaytime) {
+            demo_prev_frame_time=millis();
+       
+            demo_minutes_of_the_day+=5; 
+            if(demo_minutes_of_the_day >= 12*60) {demo_minutes_of_the_day=0;};
+            // if(demo_minutes_of_the_day > 3*60 &&demo_minutes_of_the_day < 10*60) minutes_of_the_day=10*60;
+            output_renderClockBitmaps(demo_minutes_of_the_day,ALARM_INDICATOR_ON);  
+         }   
+}
 
 
 /* ************************************************************
@@ -185,14 +270,24 @@ void setup() {
  */
 
 void loop() { 
-  static int demo_minutes_of_the_day=0;
-  static unsigned long demo_prev_frame_time=0;
+
 
   /* Inputs */
   input_switches_scan_tick();
   radio_loop_tick();
 
-  /* logic */
+
+  /* Timer logic */
+  if(clock_getCurrentTime()==clock_sleep_stop_time) {
+    /* TBD: Check if we are still in an alarm situation */
+    radio_switchOff();
+    clock_sleep_stop_time=SLEEP_OFF;
+    #ifdef TRACE_CLOCK
+         Serial.println("SLEEP timed out");
+    #endif
+  }
+
+  /* UI logic */
   switch (clock_state) {
     
     case STATE_IDLE:          process_STATE_IDLE(); break;
@@ -200,26 +295,17 @@ void loop() {
     case STATE_ALARM_INFO:    process_STATE_ALARM_INFO(); break;
           
     case STATE_ALARM_CHANGE:  process_STATE_ALARM_CHANGE(); break;
+
+    case STATE_SLEEP_SET:  process_STATE_SLEEP_SET(); break;
+
+    case STATE_DEMO:  process_STATE_DEMO(); break;
+
  /* ------------------------------------------------------------------ */  
-          
-    case STATE_DEMO:
-         if(input_snoozeGotPressed()) {
-            clock_state=STATE_IDLE; 
-            input_getEncoderValue(); // to Remove all change events 
-            output_renderClockBitmaps(clock_getCurrentTime(),ALARM_INDICATOR_OFF); 
-            break;  
-          }
-          
-        if(millis()-demo_prev_frame_time> demo_delaytime) {
-            demo_prev_frame_time=millis();
-       
-            demo_minutes_of_the_day+=5; 
-            if(demo_minutes_of_the_day >= 12*60) {demo_minutes_of_the_day=0;};
-            // if(demo_minutes_of_the_day > 3*60 &&demo_minutes_of_the_day < 10*60) minutes_of_the_day=10*60;
-            output_renderClockBitmaps(demo_minutes_of_the_day,ALARM_INDICATOR_ON);  
-         }  
-        break; 
-    /* ------------------------------------------------------------------ */  
+  
+    default: output_renderClockBitmaps(TIME_UNKNOWN,ALARM_INDICATOR_ON); 
+      output_matrix_displayUpdate() ;
+      delay(1000);
+      enter_STATE_IDLE();
   }
 
   /* output */
