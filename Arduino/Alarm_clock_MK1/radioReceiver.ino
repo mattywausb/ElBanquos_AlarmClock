@@ -17,7 +17,7 @@
 
 #ifdef TRACE_ON
 //#define TRACE_RADIO 1
-#define DEBUG_RDS_MOCKUP 1
+//#define DEBUG_RDS_MOCKUP 1
 #endif
 
 

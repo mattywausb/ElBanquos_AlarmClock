@@ -5,7 +5,7 @@
 
 #ifdef TRACE_ON
 #define TRACE_CLOCK 1
-#define DEBUG_HIGHRES_ALARMSET 1
+//#define DEBUG_HIGHRES_ALARMSET 1
 #endif
 
 #define REFERENCE_AGE_FOR_CHECK 30
