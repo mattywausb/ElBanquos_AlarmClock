@@ -17,6 +17,8 @@
 
 #define MINUTE_SHIFT_THRESHOLD 45
 
+#define FRAME_DELAY 750
+
 
 enum MAIN_STATE {
   STATE_DEMO_CLOCK, 
@@ -91,7 +93,7 @@ void displayUpdate() {
       case 7: rowPattern=clock_hour_bitmap>>14;break;
       } // switch
    
-    led8x8.setRow(LED8X8_PANEL_0,row,rowPattern);   
+    led8x8.setColumn(LED8X8_PANEL_0,7-row,rowPattern);   
     #ifdef OUTPUT_TRACE 
       Serial.println(rowPattern,BIN);
     #endif
@@ -198,7 +200,7 @@ void displayTrust(byte rds_trust_base16){
       }      
       if((7-row)*2<rds_trust_base16) rowPattern|=B0001000;
       if((row)*2<rds_trust_base16+1) rowPattern|=B00010000;
-      led8x8.setRow(LED8X8_PANEL_0,row,rowPattern); 
+      led8x8.setColumn(LED8X8_PANEL_0,7-row,rowPattern); 
     }
 }
 ;
@@ -224,39 +226,51 @@ void setup() {
 }
 
 void loop() { 
+  static unsigned long last_frame_change_time=0;
   static int minutes_of_the_day=0;
 
               static byte trust=0;
 
               
     #ifdef TRACE_ON
-      Serial.println( "--Tick--");
+      //Serial.println( "--Tick--");
     #endif
   /* Inputs */
-  //input_switches_scan_tick();
+  input_switches_scan_tick();
 
   switch(main_state) {
     case STATE_DEMO_CLOCK:
 
-            minutes_of_the_day+=5; 
-            if(minutes_of_the_day >= 12*60) {minutes_of_the_day=0;};
-            // if(minutes_of_the_day > 3*60 && minutes_of_the_day < 10*60) minutes_of_the_day=10*60;
-            renderClockBitmaps(minutes_of_the_day);
-            
-            /* output */
-            displayUpdate() ;
-            
-            /* delay */
-            delay(delaytime);  
+            if(input_snoozeGotPressed()) {
+              main_state=STATE_DEMO_RDS_TRUST_BAR;
+              break;
+            }
+            if(millis()-last_frame_change_time>FRAME_DELAY) {
+              last_frame_change_time=millis();
+              
+              minutes_of_the_day+=5; 
+              if(minutes_of_the_day >= 12*60) {minutes_of_the_day=0;};
+              // if(minutes_of_the_day > 3*60 && minutes_of_the_day < 10*60) minutes_of_the_day=10*60;
+              renderClockBitmaps(minutes_of_the_day);
+              
+              /* output */
+              displayUpdate() ;
+            }
+ 
             break;  
     case STATE_DEMO_RDS_TRUST_BAR:
-
-            displayTrust(trust);
-            if(++trust>15){
-              delay(1000);
-              trust=0;
+            if(input_snoozeGotPressed()) {
+              main_state=STATE_DEMO_CLOCK;
+              break;
             }
-            delay(1000);
+
+            if(millis()-last_frame_change_time>FRAME_DELAY) {
+              last_frame_change_time=millis();
+              displayTrust(trust);
+              if(++trust>15){
+                trust=0;
+              }
+            }
             break;
      default:
                          

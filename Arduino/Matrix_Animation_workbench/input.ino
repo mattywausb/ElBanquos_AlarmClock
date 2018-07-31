@@ -2,7 +2,7 @@
 
 // Activate general trace output
 
-//#define TRACE_INPUT 1
+#define TRACE_INPUT 1
 
 /* Port constants */
 
@@ -138,12 +138,17 @@ void input_switches_scan_tick() {  /* After every tick, especially the flank eve
 
     
     if(bitRead(raw_state_previous,bitIndex)!= rawRead) { // we have a flank
+
       bitWrite(raw_state_previous,bitIndex,rawRead); // remember the new raw state
       stateChangeTs[switchIndex]=micros(); // remember  our time
     } else {  /* no change in raw state */
       if(bitRead(debounced_state,bitIndex)!= rawRead && // but a change against debounced state
-         (micros()-stateChangeTs[switchIndex]>input_debounce_cooldown_interval))  // and raw is holding it long enough
+         (micros()-stateChangeTs[switchIndex]>input_debounce_cooldown_interval)) { // and raw is holding it long enough
           bitWrite(debounced_state,bitIndex,rawRead); // Change our debounce state
+          #ifdef TRACE_INPUT
+              Serial.print(F("Change on"));Serial.println(bitIndex);
+           #endif
+      }
     }
   }// For switch index
 
@@ -183,9 +188,9 @@ void input_switches_scan_tick() {  /* After every tick, especially the flank eve
        INPUT_ENCODER_AB_MASK&
        INPUT_DEBOUNCED_CURRENT_STATE_MASK)==0) {
        #ifdef INPUT_TRACE
-                if(encoder_transition_state) {Serial.print(input_encoder_value); Serial.println("<--Encoder idle");}
-              #endif 
-              encoder_transition_state=ENCODER_IDLE_POSITION;
+               if(encoder_transition_state) {Serial.print(input_encoder_value); Serial.println("<--Encoder idle");}
+        #endif 
+        encoder_transition_state=ENCODER_IDLE_POSITION;
 
        }
 
