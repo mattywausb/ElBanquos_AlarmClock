@@ -30,8 +30,8 @@ enum CLOCK_STATE {
   STATE_SLEEP_SET,  // Activate Sleep and change sleep time
   STATE_DEMO  // show fast time progressing
 };
+CLOCK_STATE clock_state = STATE_IDLE; 
 
-CLOCK_STATE clock_state = STATE_IDLE; ///< The state variable is used for parsing input characters.
 #define TIME_UNKNOWN -1
 #define TRIGGER_IS_OFF -2
 
@@ -39,7 +39,10 @@ CLOCK_STATE clock_state = STATE_IDLE; ///< The state variable is used for parsin
 #define RDS_TRUST_ACCEPTABLE 10   // Minimal trust to be used
 #define RDS_TRUST_CANDIDATE 4     // Number of consecutive occurences to be protected from instant replacement
 #define RDS_DERIVATION_TOLERANCE 3 // Minutes of derivation, we accept as correction
-#define RDS_SCAN_COOLDOWN_TIME  3000   // Milliseconds before we evaluate  the next RDS Time Telegram
+#define RDS_SCAN_COOLDOWN_TIME  750   // Milliseconds before we use the next RDS Time Telegram
+//#define RDS_MAX_WAIT_TIME  300000    // after 5 Minutes (300 seconds) with no signal we change channel 
+#define RDS_MAX_WAIT_TIME  150000    // after 2,5 Minutes (150 seconds) with no signal we change channel 
+#define BAD_TRY_UNTIL_CHANNEL_CHANGE 14 // Number of unsuccedfull tries until we change RDS channel
 
 unsigned long clock_sync_time=millis();
 int clock_reference_time=-1;
@@ -77,45 +80,82 @@ int clock_getAgeOfReference(){
 
 void clock_setReferenceTime(int measured_time) {
 static unsigned long last_measure_time=0;
+static byte badTryCount=0;
 
   if(measured_time>MINUTES_PER_DAY) return; /* this is definietly rubbish */
-  if(millis()-last_measure_time < RDS_SCAN_COOLDOWN_TIME) return; /* We wait for values over some time */
+
+  if( millis()-last_measure_time > RDS_MAX_WAIT_TIME) { /* if we waited very long we switch channel */
+     #ifdef TRACE_CLOCK
+        Serial.println(F("RDS Timeout"));
+     #endif 
+     badTryCount=0;
+     radio_switchRdsStation();  
+     last_measure_time=millis();   
+  }
+  #ifdef TRACE_CLOCK
+        static byte prev_second=0;
+        byte cursecond=(millis()-last_measure_time)/10000;
+        if(cursecond!=prev_second) {
+          prev_second=cursecond;
+          Serial.print(F("No RDS Time since:"));
+          Serial.println(cursecond*10);
+        }
+  #endif
+  
+  if( millis()-last_measure_time < RDS_SCAN_COOLDOWN_TIME     /* Dont accept values too fast  */
+   || radio_getRdsTimeAge() >= RDS_SCAN_COOLDOWN_TIME  ) return;       /* Only accept fresh values in relation to cooldown  */
+
   last_measure_time=millis();
   
   int previous_measure_now=(((last_measure_time-clock_sync_time)/60000)+clock_reference_time)%MINUTES_PER_DAY;
   
    #ifdef TRACE_CLOCK
-      Serial.print("RDS:");
+      Serial.print(F("RDS:"));
       trace_printTime(measured_time);
    #endif
      
   if(abs(measured_time-previous_measure_now)<RDS_DERIVATION_TOLERANCE) { /* RDS delivered in expected range  */
      if(clock_rds_trust<RDS_TRUST_GOOD) clock_rds_trust+=1;
       clock_sync_time=last_measure_time;
-      clock_reference_time=measured_time;    
+      clock_reference_time=measured_time; 
+      if(badTryCount>0) badTryCount--;   
       #ifdef TRACE_CLOCK
-       Serial.print("\taccept");
+       Serial.print(F("\taccept"));
       #endif 
+ 
   } else {
 
      if(clock_rds_trust>=RDS_TRUST_CANDIDATE) {
       clock_rds_trust-=2; 
       #ifdef TRACE_CLOCK
-       Serial.print("\treject");
-      #endif    
+       Serial.print(F("\treject"));
+      #endif   
+       
      } else  { /* Only, when our trust has gone , we try the new RDS value */
+      badTryCount++;
       clock_sync_time=last_measure_time;
       clock_reference_time=measured_time;        
       clock_rds_trust=0;
+      /* TBD switch station after x attemps */
       #ifdef TRACE_CLOCK
-       Serial.print("\tswitch");
+       Serial.print(("\tswitch"));
       #endif    
      }
-
   }
+
+  if(badTryCount>BAD_TRY_UNTIL_CHANNEL_CHANGE) {
+    #ifdef TRACE_CLOCK
+       Serial.println(F("RDS bad count limit reached > channelchange"));
+    #endif 
+    badTryCount=0;
+    radio_switchRdsStation();
+  }
+  
   #ifdef TRACE_CLOCK
-    Serial.print(" trust:");
-    Serial.println(clock_rds_trust);
+    Serial.print(F(" trust:"));
+    Serial.print(clock_rds_trust);
+    Serial.print(F("\tBadTry:"));
+    Serial.println(badTryCount);
   #endif
 
 }
@@ -124,7 +164,7 @@ static unsigned long last_measure_time=0;
 void trace_printTime(int timeValue)
 {
     Serial.print(timeValue/60);
-    Serial.print(":");
+    Serial.print(F(":"));
     Serial.print(timeValue%60);  
 }
 
@@ -132,9 +172,9 @@ void trace_printTime(int timeValue)
 
 void enter_STATE_IDLE(){
      clock_state=STATE_IDLE;
-     output_renderClockBitmaps(clock_getCurrentTime(),input_masterSwitchIsSet()?ALARM_INDICATOR_ON:ALARM_INDICATOR_OFF);
+     output_renderIdleClockScene(clock_getCurrentTime(),input_masterSwitchIsSet()?ALARM_INDICATOR_ON:ALARM_INDICATOR_OFF,(clock_rds_trust*16)/RDS_TRUST_ACCEPTABLE);
      #ifdef TRACE_CLOCK
-     Serial.println("#IDLE");
+     Serial.println(F("#IDLE"));
      #endif
 }
 
@@ -149,13 +189,13 @@ void process_STATE_IDLE(){
   /* Check RDS Data when necessary */
   if(clock_getAgeOfReference()>REFERENCE_AGE_FOR_CHECK ||
      clock_rds_trust<RDS_TRUST_GOOD) {
-    radio_setRdsScanActive(true);
-    if(radio_getRdsIsUptodate()) { /* we got an update */
-       clock_setReferenceTime(radio_getLastRdsTimeInfo());
-    }
+     radio_setRdsScanActive(true);
+     clock_setReferenceTime(radio_getLastRdsTimeInfo());
   }  else radio_setRdsScanActive(false);       
 
-  output_renderClockBitmaps(clock_getCurrentTime(),input_masterSwitchIsSet()?ALARM_INDICATOR_ON:ALARM_INDICATOR_OFF);  
+  output_renderIdleClockScene(clock_getCurrentTime()
+                             ,input_masterSwitchIsSet()?ALARM_INDICATOR_ON:ALARM_INDICATOR_OFF
+                             ,(clock_rds_trust*16)/RDS_TRUST_ACCEPTABLE);  
 }
 
 /* *************** STATE_WAKEUP ***************** */
@@ -168,9 +208,12 @@ void enter_STATE_WAKEUP(){
    clock_snooze_stop_time=TRIGGER_IS_OFF;
    
    #ifdef TRACE_CLOCK
-     Serial.println("#WAKEUP");
+     Serial.println(F("#WAKEUP"));
    #endif
-   output_renderClockBitmaps(clock_getCurrentTime(),clock_snooze_stop_time==TRIGGER_IS_OFF?0:ALARM_INDICATOR_SNOOZE|(input_masterSwitchIsSet()?ALARM_INDICATOR_ON :ALARM_INDICATOR_OFF));
+   output_renderIdleClockScene(clock_getCurrentTime()
+                               ,clock_snooze_stop_time==TRIGGER_IS_OFF?0:ALARM_INDICATOR_SNOOZE
+                               |(input_masterSwitchIsSet()?ALARM_INDICATOR_ON :ALARM_INDICATOR_OFF)
+                               ,(clock_rds_trust*16)/RDS_TRUST_ACCEPTABLE);
 }
 
 void resume_STATE_WAKEUP(){
@@ -178,7 +221,7 @@ void resume_STATE_WAKEUP(){
    clock_snooze_stop_time=TRIGGER_IS_OFF;
    radio_switchOn();
    #ifdef TRACE_CLOCK
-     Serial.println(">WAKEUP");
+     Serial.println(F(">WAKEUP"));
    #endif
 }
 
@@ -190,7 +233,7 @@ void process_STATE_WAKEUP(){
     radio_switchOff();
     output_sequence_acknowlegde();
    #ifdef TRACE_CLOCK
-     Serial.print("WAKEUP:Snooze ");
+     Serial.print(F("WAKEUP:Snooze "));
      trace_printTime(clock_snooze_stop_time);
      Serial.println();
    #endif
@@ -202,14 +245,15 @@ void process_STATE_WAKEUP(){
   if( clock_snooze_stop_time!=TRIGGER_IS_OFF) alarmIndicator|=ALARM_INDICATOR_SNOOZE;
   if(!input_masterSwitchIsSet()) alarmIndicator|=ALARM_INDICATOR_OFF;
 
-
-  output_renderClockBitmaps(clock_getCurrentTime(),alarmIndicator);
+  output_renderIdleClockScene(clock_getCurrentTime()
+                             ,alarmIndicator
+                             ,(clock_rds_trust*16)/RDS_TRUST_ACCEPTABLE);
 
 }
 
 void exit_STATE_WAKEUP() {
    #ifdef TRACE_CLOCK
-     Serial.println("<WAKEUP");
+     Serial.println(F("<WAKEUP"));
    #endif
   radio_switchOff();
   clock_snooze_stop_time=TRIGGER_IS_OFF;
@@ -224,7 +268,7 @@ void enter_STATE_STOP_PROCEDURE(){
    clock_state=STATE_STOP_PROCEDURE;
    input_setEncoderRange(-20,20,1,20);  
    #ifdef TRACE_CLOCK
-     Serial.println("#STOP_PROCEDURE");
+     Serial.println(F("#STOP_PROCEDURE"));
    #endif
    output_renderStopProcedureScene(input_getEncoderValue());
 }
@@ -233,7 +277,7 @@ void enter_STATE_STOP_PROCEDURE(){
 void process_STATE_STOP_PROCEDURE(){
  if(input_snoozeGotPressed()) {     
     #ifdef TRACE_CLOCK
-     Serial.println("STOP_PROCEDURE:Snoozing");
+     Serial.println(F("STOP_PROCEDURE:Snoozing"));
     #endif
     clock_alarm_stop_time=clock_getCurrentTime()+ALARM_DURATION ;  
     clock_snooze_stop_time=clock_getCurrentTime()+SNOOZE_DURATION;
@@ -268,9 +312,9 @@ void enter_STATE_ALARM_INFO(){
   
   clock_state=STATE_ALARM_INFO; 
   input_getEncoderValue(); // Read out Encoder to get of the last event 
-  output_renderClockBitmaps( clock_alarm_time[clock_focussed_alarmIndex],ALARM_INDICATOR_SHOW);
+  output_renderClockScene( clock_alarm_time[clock_focussed_alarmIndex],ALARM_INDICATOR_SHOW);
   #ifdef TRACE_CLOCK
-         Serial.println("#ALARM_INFO");
+         Serial.println(F("#ALARM_INFO"));
          trace_printTime( clock_alarm_time[clock_focussed_alarmIndex]);
          Serial.println();
   #endif
@@ -288,7 +332,7 @@ void process_STATE_ALARM_INFO(){
              enter_STATE_ALARM_CHANGE();return;
              return;
     }
-   output_renderClockBitmaps( clock_alarm_time[clock_focussed_alarmIndex],ALARM_INDICATOR_SHOW);
+   output_renderClockScene( clock_alarm_time[clock_focussed_alarmIndex],ALARM_INDICATOR_SHOW);
   
 }
 
@@ -300,9 +344,9 @@ void enter_STATE_ALARM_CHANGE(){
   #ifdef DEBUG_HIGHRES_ALARMSET
     input_setEncoderRange(0, MINUTES_PER_DAY-1,1,clock_alarm_time[clock_focussed_alarmIndex]);
   #endif
-  output_renderClockBitmaps(input_getEncoderValue(),ALARM_INDICATOR_EDIT);
+  output_renderClockScene(input_getEncoderValue(),ALARM_INDICATOR_EDIT);
    #ifdef TRACE_CLOCK
-         Serial.println("#ALARM_CHANGE");
+         Serial.println(F("#ALARM_CHANGE"));
    #endif
 }
 
@@ -326,7 +370,7 @@ void process_STATE_ALARM_CHANGE(){
     }
   #endif
   
-  output_renderClockBitmaps(input_getEncoderValue(),ALARM_INDICATOR_EDIT); 
+  output_renderClockScene(input_getEncoderValue(),ALARM_INDICATOR_EDIT); 
 }
 
 
@@ -341,7 +385,7 @@ void enter_STATE_SLEEP_SET(){
   output_renderSleepScene(input_getEncoderValue());
   radio_switchOn();
   #ifdef TRACE_CLOCK
-         Serial.println("#SLEEP_SET");
+         Serial.println(F("#SLEEP_SET"));
   #endif
 }
 
@@ -349,7 +393,7 @@ void process_STATE_SLEEP_SET(){
   if(input_snoozeGotPressed() )
   {
     #ifdef TRACE_CLOCK
-         Serial.println("SLEEP cancel by snooze");
+         Serial.println(F("SLEEP cancel by snooze"));
     #endif
     radio_switchOff(); /* TBD: only if we are still in a wakeup interval */
     output_sequence_escape();
@@ -365,7 +409,7 @@ void process_STATE_SLEEP_SET(){
     }
     if(input_getEncoderValue()==0) {
       #ifdef TRACE_CLOCK
-         Serial.println("SLEEP cancel by 0");
+         Serial.println(F("SLEEP cancel by 0"));
       #endif
        radio_switchOff(); /* TBD: only if we are still in a wakeup interval */
        clock_sleep_stop_time=TRIGGER_IS_OFF;
@@ -375,7 +419,7 @@ void process_STATE_SLEEP_SET(){
     clock_sleep_stop_time=(input_getEncoderValue()+clock_getCurrentTime()) % MINUTES_PER_DAY;
     output_sequence_acknowlegde();
     #ifdef TRACE_CLOCK
-         Serial.print("SLEEP until ");
+         Serial.print(F("SLEEP until "));
          trace_printTime(clock_sleep_stop_time);
          Serial.println();         
     #endif
@@ -390,7 +434,7 @@ void enter_STATE_DEMO(){
   clock_state=STATE_DEMO; 
   input_setEncoderRange(0, MINUTES_PER_DAY-1,5,0);
   #ifdef TRACE_CLOCK
-         Serial.println("#DEMO");
+         Serial.println(F("#DEMO"));
   #endif
 }
 
@@ -407,7 +451,7 @@ void process_STATE_DEMO(){
             demo_prev_frame_time=millis();
             if(input_getSecondsSinceLastEvent()>5) input_setEncoderValue(input_getEncoderValue()+5);
          }  
-         output_renderClockBitmaps(input_getEncoderValue(),ALARM_INDICATOR_OFF); 
+         output_renderClockScene(input_getEncoderValue(),ALARM_INDICATOR_OFF); 
 }
 
 
@@ -419,7 +463,7 @@ void process_STATE_DEMO(){
 void setup() {
  #ifdef TRACE_ON 
  Serial.begin(9600);
- Serial.println("--------->Start<------------");
+ Serial.println(F("--------->Start<------------"));
  #endif
  
   output_setup();
@@ -448,7 +492,7 @@ void loop() {
     radio_switchOff();
     clock_sleep_stop_time=TRIGGER_IS_OFF;
     #ifdef TRACE_CLOCK
-         Serial.println("SLEEP timed out");
+         Serial.println(F("SLEEP timed out"));
     #endif
   }
 
@@ -495,26 +539,27 @@ void loop() {
 
  /* ------------------------------------------------------------------ */  
   
-    default: output_renderClockBitmaps(TIME_UNKNOWN,ALARM_INDICATOR_ON); 
+    default: output_renderClockScene(TIME_UNKNOWN,ALARM_INDICATOR_ON); 
       output_matrix_displayUpdate() ;
       delay(1000);
       enter_STATE_IDLE();
   }
 
   /* output */
-  output_matrix_displayUpdate() ;
+  /* is managed by scenes and sequences call from state functions */
+  /* --- no output code here ------*/
 
   #ifdef TRACE_CLOCK
   static int last_traced_time;
   if( last_traced_time!=clock_getCurrentTime()) {
     last_traced_time=clock_getCurrentTime();
-    Serial.print("Cur :");
+    Serial.print(F("Cur :"));
     Serial.print(last_traced_time/60);
     Serial.print(":");
     Serial.print(last_traced_time%60);  
-    Serial.print(" Alm:");
+    Serial.print(F(" Alm:"));
     Serial.print(clock_alarm_time[clock_focussed_alarmIndex]/60);
-    Serial.print(":");
+    Serial.print(F(":"));
     Serial.println(clock_alarm_time[clock_focussed_alarmIndex]%60);  
   }
   #endif

@@ -1,27 +1,27 @@
 /* Functions to handle all input elements */
 
-#include "mainSettings.h"
-
 // Activate general trace output
 
-#ifdef TRACE_ON
 //#define TRACE_INPUT 1
-//#define TRACE_INPUT_HIGH 1
-#endif
 
 /* Port constants */
+
+const byte plug_bus_clock_pin=9;
+const byte plug_bus_storage_pin=8;
+const byte plug_bus_data_pin=7;
+
 
 const byte switch_pin_list[]={6,    // ENCODER A
                               7,    // ENCODER B
                               8,    // SELECT ( ENCODER PUSH)
                               9     // Snooze
                          //     8     // Alarm Main Switch
-                              };   
+                              };  
                          
 #define INPUT_BITIDX_ENCODER_A 0
 #define INPUT_BITIDX_ENCODER_B 2
 #define INPUT_BITIDX_SELECT 4
-#define INPUT_BITIDX_SNOOZE 6
+#define INPUT_BITIDX_SNOOZe 6
 /*                                         76543210 */
 #define INPUT_ENCODER_A_MASK              B00000011
 #define INPUT_ENCODER_A_PRESSED_PATTERN   B00000001
@@ -37,14 +37,14 @@ const byte switch_pin_list[]={6,    // ENCODER A
 #define INPUT_SELECT_PRESSED_PATTERN   B00010000
 #define INPUT_SELECT_RELEASED_PATTERN  B00100000
 
-#define INPUT_SNOOZE_MASK              B11000000
-#define INPUT_SNOOZE_PRESSED_PATTERN   B01000000
-#define INPUT_SNOOZE_RELEASED_PATTERN  B10000000
+#define INPUT_RESULT_MASK              B11000000
+#define INPUT_RESULT_PRESSED_PATTERN   B01000000
+#define INPUT_RESULT_RELEASED_PATTERN  B10000000
 
 const unsigned long input_debounce_cooldown_interval = 5000; //in microseconds, never check individual state again bevor this time is over
-const unsigned long input_scan_interval = 100; //in microseconds, never scan any state before this time is over, 
+const unsigned long input_scan_interval = 200; //in microseconds, never scan anything state bevore this time is over, 
 
-/* Variable for skipping unnecessary scans */
+/* Variable for reducing cpu usage */
 unsigned long lastScanTs=0;
 
 /* Variables for debounce handling */
@@ -54,7 +54,7 @@ unsigned long lastScanTs=0;
 
 byte raw_state_previous=0;
 byte debounced_state=0;  // can track up to 4 buttons (current at 6420 and previous at 7531) 
-unsigned long stateChangeTs[sizeof(switch_pin_list)]; // for trackin switch specifc event time
+unsigned long stateChangeTs[sizeof(switch_pin_list)];
 
 
 /* Variables for encoder tracking */
@@ -66,44 +66,25 @@ byte encoder_transition_state=0;
 
 int input_encoder_value=0;
 int input_encoder_rangeMin=0;
-int input_encoder_rangeMax=719;
-int input_encoder_stepSize=1;
-bool input_encoder_change_event=false;
-unsigned long last_interaction_time=0;
+int input_encoder_rangeMax=45;
+
 
 
 
 /* ********************************************************************************************************** */
 /*               Interface functions                                                                          */
 
-int input_getSecondsSinceLastEvent() {
-  unsigned long timestamp_difference=(millis()-last_interaction_time)/1000;
-  if(timestamp_difference>255) return 255;
-  #ifdef TRACE_INPUT_HIGH
-    Serial.print(F("last interaction:"));
-    Serial.println(timestamp_difference);
-  #endif
-  return timestamp_difference;
-}
-
 byte input_selectGotPressed() {
  return (debounced_state&INPUT_SELECT_MASK)==INPUT_SELECT_PRESSED_PATTERN; ; /* We switched from unpressed to pressed */;
 }
 
 byte input_snoozeGotPressed() {
- return (debounced_state&INPUT_SNOOZE_MASK)==INPUT_SNOOZE_PRESSED_PATTERN; ; /* We switched from unpressed to pressed */;
+ return (debounced_state&INPUT_RESULT_MASK)==INPUT_RESULT_PRESSED_PATTERN; ; /* We switched from unpressed to pressed */;
 }
 
-bool input_masterSwitchIsSet() {
-  return true; // Mockup
-}
-bool input_checkEncoderChangeEvent(){
-  return input_encoder_change_event;
-}
 
-int input_getEncoderValue(){
-    input_encoder_change_event=false;
-    return input_encoder_value;
+byte input_getEncoderValue(){
+  return input_encoder_value;
 }
 
 void input_setEncoderValue(int newValue) {
@@ -112,20 +93,11 @@ void input_setEncoderValue(int newValue) {
   if(input_encoder_value>input_encoder_rangeMax) input_encoder_value=input_encoder_rangeMax;
 }
 
-void input_setEncoderRange(int rangeMin,int rangeMax,int stepSize,int startValue) {
-  input_encoder_rangeMin=min(rangeMin,rangeMax);
-  input_encoder_rangeMax=max(rangeMin,rangeMax);
-  input_encoder_stepSize=stepSize;
-  if(startValue>=input_encoder_rangeMin 
-     && startValue<=input_encoder_rangeMax) input_encoder_value=startValue;
-    else                                    input_encoder_value=input_encoder_rangeMin;
-}
-
 /* ********************************************************************************************************** */
 /*               S E T U P                                                                                    */
 
 
-void input_setup(int encoderRangeMin, int encoderRangeMax,byte encoderStepSize) {
+void input_setup(int encoderRangeMin, int encoderRangeMax) {
   
   /* Initialize switch pins and debounce timer array */
   for(byte switchIndex=0;switchIndex<sizeof(switch_pin_list);switchIndex++) {
@@ -135,7 +107,9 @@ void input_setup(int encoderRangeMin, int encoderRangeMax,byte encoderStepSize) 
   
 
   /* Initalize the encoder storage */
-  input_setEncoderRange(encoderRangeMin,encoderRangeMax,encoderStepSize,encoderRangeMin);
+  input_encoder_rangeMin=encoderRangeMin;
+  input_encoder_rangeMax=encoderRangeMax;
+  input_encoder_value=encoderRangeMin;
       
 }
 
@@ -168,10 +142,8 @@ void input_switches_scan_tick() {  /* After every tick, especially the flank eve
       stateChangeTs[switchIndex]=micros(); // remember  our time
     } else {  /* no change in raw state */
       if(bitRead(debounced_state,bitIndex)!= rawRead && // but a change against debounced state
-         (micros()-stateChangeTs[switchIndex]>input_debounce_cooldown_interval)) {  // and raw is holding it long enough
+         (micros()-stateChangeTs[switchIndex]>input_debounce_cooldown_interval))  // and raw is holding it long enough
           bitWrite(debounced_state,bitIndex,rawRead); // Change our debounce state
-          last_interaction_time=millis();
-         }
     }
   }// For switch index
 
@@ -185,8 +157,8 @@ void input_switches_scan_tick() {  /* After every tick, especially the flank eve
              ((debounced_state&INPUT_ENCODER_AB_MASK)
               ==ENCODER_START_WITH_B_PATTERN)) {
               encoder_transition_state=debounced_state&INPUT_ENCODER_AB_MASK;
-              #ifdef TRACE_INPUT
-                Serial.print(F("T"));
+              #ifdef INPUT_TRACE
+                Serial.print("T");
               #endif 
           };
           break;
@@ -194,28 +166,24 @@ void input_switches_scan_tick() {  /* After every tick, especially the flank eve
       case ENCODER_START_WITH_A_PATTERN:
             if(bitRead(debounced_state,INPUT_BITIDX_ENCODER_A)==0  // A is back open 
                && ((debounced_state&INPUT_ENCODER_B_MASK) == INPUT_ENCODER_B_RELEASED_PATTERN)){ // B Pin just got opened
-               if((input_encoder_value-=input_encoder_stepSize)<input_encoder_rangeMin) input_encoder_value=input_encoder_rangeMax; 
-               input_encoder_change_event=true;
-               last_interaction_time=millis();
+               if(--input_encoder_value<input_encoder_rangeMin) input_encoder_value=input_encoder_rangeMax; 
             };
             break;
       case ENCODER_START_WITH_B_PATTERN:
             if(bitRead(debounced_state,INPUT_BITIDX_ENCODER_B)==0  // B is back open 
                && ((debounced_state&INPUT_ENCODER_A_MASK) == INPUT_ENCODER_A_RELEASED_PATTERN)){ // A Pin just got opened
-                 if((input_encoder_value+=input_encoder_stepSize)>input_encoder_rangeMax) input_encoder_value=input_encoder_rangeMin;
-                 input_encoder_change_event=true;
-                 last_interaction_time=millis();
+                 if(++input_encoder_value>input_encoder_rangeMax) input_encoder_value=input_encoder_rangeMin;
             };
             break;
     };
-
+            
     /* Reset encoder  transition state, when all debounced 
        states of the encoder contacts are low */
     if((debounced_state&
        INPUT_ENCODER_AB_MASK&
        INPUT_DEBOUNCED_CURRENT_STATE_MASK)==0) {
-       #ifdef TRACE_INPUT
-                if(encoder_transition_state) {Serial.print(input_encoder_value); Serial.println(F("<--Encoder idle"));}
+       #ifdef INPUT_TRACE
+                if(encoder_transition_state) {Serial.print(input_encoder_value); Serial.println("<--Encoder idle");}
               #endif 
               encoder_transition_state=ENCODER_IDLE_POSITION;
 

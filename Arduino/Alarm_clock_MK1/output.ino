@@ -45,7 +45,7 @@ LedControl led8x8=LedControl(LED8X8_DATAIN_PIN,LED8X8_CLK_PIN,LED8X8_LOAD_PIN,LE
 void output_matrix_displayUpdate() {
   byte rowPattern;
   #ifdef TRACE_OUTPUT_FINAL 
-        Serial.println("-------");     
+        Serial.println(F("-------"));     
   #endif 
   for(int row=0;row<8;row++) {
 
@@ -105,15 +105,46 @@ void output_matrix_displayUpdate() {
     #endif
   }
   #ifdef TRACE_OUTPUT_FINAL 
-    Serial.println("-------");       
+    Serial.println(F("-------"));       
   #endif 
 }
 
 /* ********************************************************************+
- *            Render Clock Bitmaps
+ *            Render Idle Clock Scene
  * ********************************************************************+
  */
-void output_renderClockBitmaps(int minute_of_the_day,byte alarmIndicator) {
+void output_renderIdleClockScene(int minute_of_the_day,byte alarmIndicator,byte rds_trust_base16){
+
+  if(minute_of_the_day<0) {   /* We have to time yet */
+
+    /* render "unkown" screen with trust progress bar */
+    byte rowPattern=0;  
+    if(rds_trust_base16>15)rds_trust_base16=15;
+
+    for(byte row=0;row<8;row++) {
+     
+      switch(row) {
+        case 0:
+        case 7: rowPattern=B11000011;break;
+        case 1:
+        case 6: rowPattern=B10000001;break;
+        default:  rowPattern=0; break;
+      }      
+      if((7-row)*2<rds_trust_base16) rowPattern|=B0001000;
+      if((row)*2<rds_trust_base16+1) rowPattern|=B00010000;
+      led8x8.setRow(LED8X8_PANEL_0,row,rowPattern); 
+    }
+    return;
+  }
+  
+  output_renderClockScene(minute_of_the_day, alarmIndicator);
+  
+}
+/* ********************************************************************+
+ *            Render Clock Scene
+ * ********************************************************************+
+ */ 
+void output_renderClockScene(int minute_of_the_day,byte alarmIndicator) {
 
   unsigned int minute_of_the_hour = (minute_of_the_day%60);
   unsigned int hour = (minute_of_the_day/60)%12; /* will be truncated by integer arithmetic */
@@ -130,13 +161,7 @@ void output_renderClockBitmaps(int minute_of_the_day,byte alarmIndicator) {
 
   flag_indicator_bitmap=0;
   matrix_ring3_bitmap=0;
-  if(minute_of_the_day<0) {
-    clock_hour_bitmap=TIME_UNKNOWN_PATTERN;
-                        /* 000000010 01001001 */
-    clock_minute_bitmap=0x0249;
-    flag_indicator_bitmap=0x00;
-    return;
-  }
+
 
   /* ********** *
    *   Hour
@@ -236,6 +261,8 @@ void output_renderClockBitmaps(int minute_of_the_day,byte alarmIndicator) {
           Serial.println(0x8000|master_pattern,BIN);
     #endif
  }
+
+ output_matrix_displayUpdate();
 };
 /* ********************************************************************+
  *            Render Highres Minute Bitmaps
@@ -290,6 +317,7 @@ void output_renderStopProcedureScene(int value) {
     flag_indicator_bitmap=AFTERNOON_INDICATOR_MASK;
     clock_minute_bitmap=0;
     output_renderRing3Progress(value);
+    output_matrix_displayUpdate();
 }
 
 void output_renderSleepScene(int minutes) {
@@ -297,6 +325,7 @@ void output_renderSleepScene(int minutes) {
     flag_indicator_bitmap=0;
     matrix_ring3_bitmap=0;
     output_renderMinuteHighresBitmaps(minutes,false);
+    output_matrix_displayUpdate();
 }
 
 
