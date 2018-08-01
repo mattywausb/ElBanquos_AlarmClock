@@ -1,4 +1,3 @@
-//We always have to include the library
 
 
 #include "mainSettings.h"
