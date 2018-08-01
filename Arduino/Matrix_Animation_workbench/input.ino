@@ -10,9 +10,9 @@
 
 volatile const byte switch_pin_list[]={6,    // ENCODER A
                               7,    // ENCODER B
-                              8,    // SELECT ( ENCODER PUSH)
-                              9     // Snooze
-                         //     8     // Alarm Main Switch
+                              8,    // BUTTON A SELECT ( ENCODER PUSH)
+                              9     // BUTTON B Snooze
+                         //     8     // BUTTON C Alarm Main Switch
                               };  
 
 volatile bool setupComplete=false;
