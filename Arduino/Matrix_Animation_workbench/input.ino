@@ -15,6 +15,14 @@ volatile const byte switch_pin_list[]={6,    // ENCODER A
                          //     8     // BUTTON C Alarm Main Switch
                               };  
 
+  const unsigned int debounce_mask[]={  /* every bit is 2 ms */
+                              0x0007,    // ENCODER A
+                              0x0007,    // ENCODER B
+                              0x0007,    // BUTTON A SELECT ( ENCODER PUSH)
+                              0xffff     // BUTTON B Snooze
+                         //     8     // BUTTON C Alarm Main Switch
+                              };
+
 volatile bool setupComplete=false;
 
 #define INPUT_PORT_COUNT sizeof(switch_pin_list)
@@ -170,8 +178,8 @@ ISR(TIMER1_COMPA_vect)
     bitWrite(raw_state,i*2,raw_state_register[i]&0x0001); /* and the current status bits */
   
     // if raw state is stable  copy it to debounced state
-    if((raw_state_register[i]&0x001f)==0x001f) bitSet(debounced_state,i*2); 
-    else if((raw_state_register[i]&0x001f)==0x0000) bitClear(debounced_state,i*2);
+    if((raw_state_register[i]&0x001f)==0x0000) bitClear(debounced_state,i<<1);
+    else if((raw_state_register[i]&debounce_mask[i])==debounce_mask[i]) bitSet(debounced_state,i<<1); 
   }
 
    /* now track the encoder */

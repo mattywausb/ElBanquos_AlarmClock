@@ -207,6 +207,29 @@ void displayTrust(byte rds_trust_base16){
 ;
 
 
+
+ void output_sequence_acknowlegde(){
+  /*     8 4 2 1 8 4 2 1
+   * 7                 X    
+   * 6               X X 
+   * 5               X X   
+   * 4             X X     
+   * 3     X       X X  
+   * 2     X X   X X      
+   * 1       X X X      
+   * 0         X         
+   */
+
+   const byte colPattern[7]={0x0c,0x06,0x03,0x06,0x1c,0x78,0xe0};
+   led8x8.clearDisplay(LED8X8_PANEL_0); 
+   for(byte i=0;i<sizeof(colPattern);i++){
+       led8x8.setRow(LED8X8_PANEL_0,i,mirroredPattern(colPattern[i]));     /* using row to turn picture-90 degree */
+       delay(30);
+   }
+   delay(1000);
+   led8x8.clearDisplay(LED8X8_PANEL_0); 
+ }
+
 void setup() {
  #ifdef TRACE_ON 
  Serial.begin(9600);
@@ -224,6 +247,7 @@ void setup() {
   led8x8.clearDisplay(LED8X8_PANEL_0);
 
   input_setup(0, 8); /* Leds */
+  output_sequence_acknowlegde();
 }
 
 void loop() { 
