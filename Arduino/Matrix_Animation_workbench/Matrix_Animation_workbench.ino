@@ -228,8 +228,10 @@ void setup() {
 
 void loop() { 
   static unsigned long last_frame_change_time=0;
+  static int presscount;
   static int minutes_of_the_day=0;
   byte pattern;
+  byte pattern2;
 
               static byte trust=0;
 
@@ -243,7 +245,7 @@ void loop() {
   switch(main_state) {
     case STATE_DEMO_CLOCK:
 
-            if(input_snoozeGotPressed()) {
+            if(input_selectGotPressed()) {
               main_state=STATE_DEMO_RDS_TRUST_BAR;
               break;
             }
@@ -261,7 +263,7 @@ void loop() {
  
             break;  
     case STATE_DEMO_RDS_TRUST_BAR:
-            if(input_snoozeGotPressed()) {
+            if(input_selectGotPressed()) {
               main_state=STATE_DEMO_ROTARY_TEST;
               led8x8.clearDisplay(LED8X8_PANEL_0);              
               break;
@@ -276,18 +278,25 @@ void loop() {
             }
             break;
      case STATE_DEMO_ROTARY_TEST:
-           if(input_snoozeGotPressed()) {
+           if(input_selectGotPressed()) {
             main_state=STATE_DEMO_CLOCK;
             break;
            }
+
+           if(input_snoozeGotPressed()){
+              if(++presscount>7) presscount=-7; 
+           }
+            if(presscount<0) pattern2=0xff<<abs(presscount);
+            else  pattern2=0xff>>presscount;
             pattern=0xff>>input_getEncoderValue();
 
             led8x8.setColumn(LED8X8_PANEL_0,7,input_getRawRegisterHigh(0));
             led8x8.setColumn(LED8X8_PANEL_0,6,input_getRawRegisterLow(0));
  
-            led8x8.setColumn(LED8X8_PANEL_0,4,input_getRawState());
-            led8x8.setColumn(LED8X8_PANEL_0,3,input_getDebouncedState());
-            led8x8.setColumn(LED8X8_PANEL_0,2,input_getTickState());
+            led8x8.setColumn(LED8X8_PANEL_0,5,input_getRawState());
+            led8x8.setColumn(LED8X8_PANEL_0,4,input_getDebouncedState());
+            led8x8.setColumn(LED8X8_PANEL_0,3,input_getTickState());
+            led8x8.setColumn(LED8X8_PANEL_0,1,pattern2);
             led8x8.setColumn(LED8X8_PANEL_0,0,pattern);
             break;
      default:
