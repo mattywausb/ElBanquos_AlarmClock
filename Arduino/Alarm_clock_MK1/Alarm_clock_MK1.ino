@@ -180,6 +180,7 @@ void enter_STATE_IDLE(){
 void process_STATE_IDLE(){
  if(input_snoozeGotPressed()) {     
     enter_STATE_SLEEP_SET();
+    return;
   }
   
   if(input_checkEncoderChangeEvent()) {enter_STATE_ALARM_INFO();return;}

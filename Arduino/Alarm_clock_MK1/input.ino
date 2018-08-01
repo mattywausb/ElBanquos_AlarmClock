@@ -5,25 +5,27 @@
 // Activate general trace output
 
 #ifdef TRACE_ON
-//#define TRACE_INPUT 1
+#define TRACE_INPUT 1
 //#define TRACE_INPUT_HIGH 1
 #endif
 
 /* Port constants --> check the IDS Function */
 
+#define PORT_MAIN_SWITCH 8
+
   const byte switch_pin_list[]={6,    // ENCODER A
                               7,    // ENCODER B
                               8,    // BUTTON A SELECT ( ENCODER PUSH)
-                              9     // BUTTON B Snooze
-                         //     8     // BUTTON C Alarm Main Switch
+                              9,     // BUTTON B Snooze
+                              5,     // Button C Master
                               }; 
                               
   const unsigned int debounce_mask[]={  /* every bit is 2 ms */
                               0x0007,    // ENCODER A
                               0x0007,    // ENCODER B
                               0x0007,    // BUTTON A SELECT ( ENCODER PUSH)
-                              0xffff     // BUTTON B Snooze
-                         //     8     // BUTTON C Alarm Main Switch
+                              0xffff,    // BUTTON B Snooze
+                              0xffff     // BUTTON C Master
                               }; 
 #define INPUT_PORT_COUNT sizeof(switch_pin_list)
  
@@ -59,6 +61,11 @@ unsigned int tick_state=0;                /* State provided in the actual tick, 
 #define INPUT_BUTTON_B_BITS              0x00c0
 #define INPUT_BUTTON_B_PRESSED_PATTERN   0x0040
 #define INPUT_BUTTON_B_RELEASED_PATTERN  0x0080
+
+#define INPUT_BUTTON_C_BITS              0x0300
+#define INPUT_BUTTON_C_PRESSED_PATTERN   0x0100
+#define INPUT_BUTTON_C_ON_PATTERN        0x0300
+#define INPUT_BUTTON_C_RELEASED_PATTERN  0x0200
 
 /* Variable for reducing cpu usage */
 volatile unsigned long input_last_change_time=0;
@@ -103,15 +110,25 @@ int input_getSecondsSinceLastEvent() {
 }
 
 byte input_selectGotPressed() {
+ #ifdef TRACE_INPUT
+   if((tick_state&INPUT_BUTTON_A_BITS)==INPUT_BUTTON_A_PRESSED_PATTERN) Serial.println(F("select got pressed"));
+ #endif
  return (tick_state&INPUT_BUTTON_A_BITS)==INPUT_BUTTON_A_PRESSED_PATTERN; ; /* We switched from unpressed to pressed */;
 }
 
 byte input_snoozeGotPressed() {
+ #ifdef TRACE_INPUT
+   if((tick_state&INPUT_BUTTON_B_BITS)==INPUT_BUTTON_B_PRESSED_PATTERN) Serial.println(F("snooze got pressed"));
+ #endif
  return (tick_state&INPUT_BUTTON_B_BITS)==INPUT_BUTTON_B_PRESSED_PATTERN; ; /* We switched from unpressed to pressed */;
 }
 
 bool input_masterSwitchIsSet() {
-  return true; // Mockup
+  #ifdef TRACE_INPUT
+     if((tick_state&INPUT_BUTTON_C_BITS)==INPUT_BUTTON_C_PRESSED_PATTERN) Serial.println(F("Master switched on"));
+     if((tick_state&INPUT_BUTTON_C_BITS)==INPUT_BUTTON_C_RELEASED_PATTERN) Serial.println(F("Master switched off"));
+  #endif
+  return (tick_state&INPUT_BUTTON_C_BITS)==INPUT_BUTTON_C_ON_PATTERN; 
 }
 bool input_checkEncoderChangeEvent(){
   return input_encoder_change_event;
@@ -148,7 +165,8 @@ void input_setup(int encoderRangeMin, int encoderRangeMax,byte encoderStepSize) 
        pinMode(switch_pin_list[switchIndex], INPUT_PULLUP);
       raw_state_register[switchIndex]=0; 
   }
-
+   pinMode(PORT_MAIN_SWITCH, INPUT_PULLUP);
+   
   /* Initalize the encoder storage */
   input_setEncoderRange(encoderRangeMin,encoderRangeMax,encoderStepSize,encoderRangeMin);
  
@@ -235,7 +253,7 @@ ISR(TIMER1_COMPA_vect)
     }
 
     /* Reset last change timer if anything has changed */
-    if(debounced_state & INPUT_CURRENT_BITS != (debounced_state&INPUT_PREVIOUS_BITS)>>1) input_last_change_time=millis();
+    if((debounced_state & INPUT_CURRENT_BITS) != (debounced_state&INPUT_PREVIOUS_BITS)>>1) input_last_change_time=millis();
     
 }
 
