@@ -22,7 +22,8 @@
 
 enum MAIN_STATE {
   STATE_DEMO_CLOCK, 
-  STATE_DEMO_RDS_TRUST_BAR
+  STATE_DEMO_RDS_TRUST_BAR,
+  STATE_DEMO_ROTARY_TEST
 };
 
 MAIN_STATE main_state = STATE_DEMO_RDS_TRUST_BAR; 
@@ -222,12 +223,13 @@ void setup() {
   /* and clear the display */
   led8x8.clearDisplay(LED8X8_PANEL_0);
 
-  input_setup(0, 24*4); /* quater hours */
+  input_setup(0, 8); /* Leds */
 }
 
 void loop() { 
   static unsigned long last_frame_change_time=0;
   static int minutes_of_the_day=0;
+  byte pattern;
 
               static byte trust=0;
 
@@ -260,7 +262,8 @@ void loop() {
             break;  
     case STATE_DEMO_RDS_TRUST_BAR:
             if(input_snoozeGotPressed()) {
-              main_state=STATE_DEMO_CLOCK;
+              main_state=STATE_DEMO_ROTARY_TEST;
+              led8x8.clearDisplay(LED8X8_PANEL_0);              
               break;
             }
 
@@ -271,6 +274,16 @@ void loop() {
                 trust=0;
               }
             }
+            break;
+     case STATE_DEMO_ROTARY_TEST:
+           if(input_snoozeGotPressed()) {
+            main_state=STATE_DEMO_CLOCK;
+            break;
+           }
+            pattern=0xff>>input_getEncoderValue();
+            led8x8.setColumn(LED8X8_PANEL_0,6,pattern);
+            led8x8.setColumn(LED8X8_PANEL_0,0,input_getRawState());
+            led8x8.setColumn(LED8X8_PANEL_0,2,input_getDebouncedState());
             break;
      default:
                          

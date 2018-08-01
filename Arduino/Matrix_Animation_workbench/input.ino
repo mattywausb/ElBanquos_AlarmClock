@@ -2,7 +2,9 @@
 
 // Activate general trace output
 
-#define TRACE_INPUT 1
+//#define TRACE_INPUT 1
+#define TRACE_INPUT_ENCODER 1
+//#define TRACE_INPUT_HIGHRES 1
 
 /* Port constants */
 
@@ -41,8 +43,8 @@ const byte switch_pin_list[]={6,    // ENCODER A
 #define INPUT_RESULT_PRESSED_PATTERN   B01000000
 #define INPUT_RESULT_RELEASED_PATTERN  B10000000
 
-const unsigned long input_debounce_cooldown_interval = 5000; //in microseconds, never check individual state again bevor this time is over
-const unsigned long input_scan_interval = 200; //in microseconds, never scan anything state bevore this time is over, 
+const unsigned long input_debounce_cooldown_interval = 1500; //in microseconds, never check individual state again bevor this time is over
+const unsigned long input_scan_interval = 100; //in microseconds, never scan anything state bevore this time is over, 
 
 /* Variable for reducing cpu usage */
 unsigned long lastScanTs=0;
@@ -93,6 +95,11 @@ void input_setEncoderValue(int newValue) {
   if(input_encoder_value>input_encoder_rangeMax) input_encoder_value=input_encoder_rangeMax;
 }
 
+/*  Debug Interface */
+
+byte input_getRawState() {return raw_state_previous;}
+
+byte input_getDebouncedState() {return debounced_state;}
 /* ********************************************************************************************************** */
 /*               S E T U P                                                                                    */
 
@@ -142,28 +149,31 @@ void input_switches_scan_tick() {  /* After every tick, especially the flank eve
       bitWrite(raw_state_previous,bitIndex,rawRead); // remember the new raw state
       stateChangeTs[switchIndex]=micros(); // remember  our time
     } else {  /* no change in raw state */
-      if(bitRead(debounced_state,bitIndex)!= rawRead && // but a change against debounced state
-         (micros()-stateChangeTs[switchIndex]>input_debounce_cooldown_interval)) { // and raw is holding it long enough
+      if( bitRead(debounced_state,bitIndex)!= rawRead  // but a change against debounced state
+       &&(micros()-stateChangeTs[switchIndex]>input_debounce_cooldown_interval)) { // and raw is holding it long enough
           bitWrite(debounced_state,bitIndex,rawRead); // Change our debounce state
           #ifdef TRACE_INPUT
-              Serial.print(F("Change on"));Serial.println(bitIndex);
-           #endif
+              Serial.print(F("Change on "));Serial.print(bitIndex);
+              Serial.print(F(" micros:"));Serial.println(micros()-stateChangeTs[switchIndex]);
+          #endif
       }
     }
   }// For switch index
+  
 
-
+  
   /* Track encoder transitions transaction */
  
     switch(encoder_transition_state) {
       case ENCODER_IDLE_POSITION:
           if((debounced_state&INPUT_ENCODER_AB_MASK) 
-               == ENCODER_START_WITH_A_PATTERN ||
-             ((debounced_state&INPUT_ENCODER_AB_MASK)
-              ==ENCODER_START_WITH_B_PATTERN)) {
+               == ENCODER_START_WITH_A_PATTERN
+           ||(debounced_state&INPUT_ENCODER_AB_MASK)
+                 ==ENCODER_START_WITH_B_PATTERN) {
               encoder_transition_state=debounced_state&INPUT_ENCODER_AB_MASK;
-              #ifdef INPUT_TRACE
-                Serial.print("T");
+              #ifdef TRACE_INPUT_ENCODER
+                Serial.print(F("ECD !"));
+                Serial.println(B10000000|encoder_transition_state,BIN);
               #endif 
           };
           break;
@@ -172,12 +182,18 @@ void input_switches_scan_tick() {  /* After every tick, especially the flank eve
             if(bitRead(debounced_state,INPUT_BITIDX_ENCODER_A)==0  // A is back open 
                && ((debounced_state&INPUT_ENCODER_B_MASK) == INPUT_ENCODER_B_RELEASED_PATTERN)){ // B Pin just got opened
                if(--input_encoder_value<input_encoder_rangeMin) input_encoder_value=input_encoder_rangeMax; 
+              #ifdef TRACE_INPUT_ENCODER
+               Serial.println(F("ECD >"));
+               #endif 
             };
             break;
       case ENCODER_START_WITH_B_PATTERN:
             if(bitRead(debounced_state,INPUT_BITIDX_ENCODER_B)==0  // B is back open 
                && ((debounced_state&INPUT_ENCODER_A_MASK) == INPUT_ENCODER_A_RELEASED_PATTERN)){ // A Pin just got opened
                  if(++input_encoder_value>input_encoder_rangeMax) input_encoder_value=input_encoder_rangeMin;
+                #ifdef TRACE_INPUT_ENCODER
+               Serial.println(F("ECD <"));
+               #endif   
             };
             break;
     };
@@ -187,12 +203,12 @@ void input_switches_scan_tick() {  /* After every tick, especially the flank eve
     if((debounced_state&
        INPUT_ENCODER_AB_MASK&
        INPUT_DEBOUNCED_CURRENT_STATE_MASK)==0) {
-       #ifdef INPUT_TRACE
-               if(encoder_transition_state) {Serial.print(input_encoder_value); Serial.println("<--Encoder idle");}
+       #ifdef TRACE_INPUT_ENCODER
+               if(encoder_transition_state) { Serial.print(F("EDC ."));Serial.println(input_encoder_value);}
         #endif 
         encoder_transition_state=ENCODER_IDLE_POSITION;
 
-       }
+    }
 
   
 } // void input_switches_tick()
