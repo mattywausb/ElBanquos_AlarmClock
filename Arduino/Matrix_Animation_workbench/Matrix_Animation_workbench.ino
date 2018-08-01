@@ -26,7 +26,7 @@ enum MAIN_STATE {
   STATE_DEMO_ROTARY_TEST
 };
 
-MAIN_STATE main_state = STATE_DEMO_RDS_TRUST_BAR; 
+MAIN_STATE main_state = STATE_DEMO_ROTARY_TEST; 
 
 
 LedControl led8x8=LedControl(LED8X8_DATAIN_PIN,LED8X8_CLK_PIN,LED8X8_LOAD_PIN,LED8X8_COUNT);
@@ -281,9 +281,14 @@ void loop() {
             break;
            }
             pattern=0xff>>input_getEncoderValue();
-            led8x8.setColumn(LED8X8_PANEL_0,6,pattern);
-            led8x8.setColumn(LED8X8_PANEL_0,0,input_getRawState());
-            led8x8.setColumn(LED8X8_PANEL_0,2,input_getDebouncedState());
+
+            led8x8.setColumn(LED8X8_PANEL_0,7,input_getRawRegisterHigh(0));
+            led8x8.setColumn(LED8X8_PANEL_0,6,input_getRawRegisterLow(0));
+ 
+            led8x8.setColumn(LED8X8_PANEL_0,4,input_getRawState());
+            led8x8.setColumn(LED8X8_PANEL_0,3,input_getDebouncedState());
+            led8x8.setColumn(LED8X8_PANEL_0,2,input_getTickState());
+            led8x8.setColumn(LED8X8_PANEL_0,0,pattern);
             break;
      default:
                          
