@@ -27,7 +27,7 @@
 
 #define FINAL_VOLUME   15               ///< The volume that will finally be set by this sketch is level 8.
 #define FADE_STEP_INTERVAL  3500      // milliseconds to wait until next fade step
-#define RDS_SCAN_VOLUME 10          // Volume to use when scann (for debug reasons can be set >0)
+#define RDS_SCAN_VOLUME 0          // Volume to use when scann (for debug reasons can be set >0)
 #define RDS_UPTODATE_THRESHOLD 50000  // Milliseconds we declare our information as actual
 
 /* the following presets should provde rds time data in my time zone */
