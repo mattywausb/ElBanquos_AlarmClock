@@ -13,11 +13,11 @@
 
 #define PORT_MAIN_SWITCH 8
 
-  const byte switch_pin_list[]={6,    // ENCODER A
+  const byte switch_pin_list[]={8,    // ENCODER A
                               7,    // ENCODER B
-                              8,    // BUTTON A SELECT ( ENCODER PUSH)
-                              9,     // BUTTON B Snooze
-                              5,     // Button C Master
+                              9,    // BUTTON A SELECT ( ENCODER PUSH)
+                              5,     // BUTTON B Snooze
+                              6,     // Button C Master
                               }; 
                               
   const unsigned int debounce_mask[]={  /* every bit is 2 ms */
