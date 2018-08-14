@@ -67,9 +67,9 @@ void setup() {
  Serial.println(F("--------->Start<------------"));
  #endif
  
-  output_setup();
   input_setup(0, MINUTES_PER_DAY-1,15); /* Encoder Range 24 hoursis,stepping quater hours */
   radio_setup();
+  output_setup();
 
   clock_alarm_time[0]=DEFAULT_ALARM_TIME; /* Fall back alarm */
 }
@@ -498,7 +498,7 @@ void enter_STATE_SLEEP_SET(){
   int sleepMinutes=45;
   if(clock_sleep_stop_time!=TRIGGER_IS_OFF) sleepMinutes=clock_sleep_stop_time-clock_getCurrentTime();
   if(sleepMinutes<0) sleepMinutes+MINUTES_PER_DAY;
-  input_setEncoderRange(0, 70,5,sleepMinutes);
+  input_setEncoderRange(0, 75,5,sleepMinutes); // 65,70,75 for debug and demo
   output_renderSleepScene(input_getEncoderValue());
   radio_switchOn();
   #ifdef TRACE_CLOCK
@@ -518,32 +518,50 @@ void process_STATE_SLEEP_SET(){
     return;
   }
 
-  if(input_selectGotPressed() 
-  || input_getSecondsSinceLastEvent()> SECONDS_UNTIL_FALLBACK_SHORT) {
-    if(input_getEncoderValue()>60) {
-      enter_STATE_DEMO();
-      return;
-    }
-    if(input_getEncoderValue()==0) {
+   if(input_getEncoderValue()<=60) {  // normal sleep setting
+      if(input_selectGotPressed() || input_getSecondsSinceLastEvent()> SECONDS_UNTIL_FALLBACK_SHORT)
+      {
+      if(input_getEncoderValue()==0) {
+        #ifdef TRACE_CLOCK
+           Serial.println(F("SLEEP cancel by 0"));
+        #endif
+         radio_switchOff(); 
+         clock_sleep_stop_time=TRIGGER_IS_OFF;
+         enter_STATE_IDLE();
+        return;
+      }
+      clock_sleep_stop_time=(input_getEncoderValue()+clock_getCurrentTime()) % MINUTES_PER_DAY;
+      output_sequence_acknowlegde();
       #ifdef TRACE_CLOCK
-         Serial.println(F("SLEEP cancel by 0"));
+           Serial.print(F("SLEEP until "));
+           trace_printTime(clock_sleep_stop_time);
+           Serial.println();         
       #endif
-       radio_switchOff(); /* TBD: only if we are still in a wakeup interval */
-       clock_sleep_stop_time=TRIGGER_IS_OFF;
-       enter_STATE_IDLE();
-      return;
+      enter_STATE_IDLE();
+      return;       
     }
-    clock_sleep_stop_time=(input_getEncoderValue()+clock_getCurrentTime()) % MINUTES_PER_DAY;
-    output_sequence_acknowlegde();
-    #ifdef TRACE_CLOCK
-         Serial.print(F("SLEEP until "));
-         trace_printTime(clock_sleep_stop_time);
-         Serial.println();         
-    #endif
-    enter_STATE_IDLE();
-    return;       
+    output_renderSleepScene(input_getEncoderValue());
+  } else { // out of sleep setting range, so we reach demo and debug modes
+
+     if(input_getSecondsSinceLastEvent()> SECONDS_UNTIL_FALLBACK_SHORT) 
+     {
+        radio_switchOff(); 
+        clock_sleep_stop_time=TRIGGER_IS_OFF;
+        enter_STATE_IDLE();
+        return;
+     }
+     
+     switch(input_getEncoderValue()) {
+      case 65:
+            if(input_selectGotPressed()) 
+            {
+              enter_STATE_DEMO();
+              return;  
+            }
+            break;                
+     }
+     output_renderLetterScene((input_getEncoderValue()-65)/5);
   }
-  output_renderSleepScene(input_getEncoderValue());
 }
 
 /* *************** STATE_DEMO ***************** */

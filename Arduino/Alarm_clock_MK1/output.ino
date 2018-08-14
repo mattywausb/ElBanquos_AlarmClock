@@ -454,7 +454,7 @@ void output_renderMinuteHighresBitmaps(int minutes,bool zeroIs60)
  *                                                                                       
  *                                                                                     
  */ 
-
+/* Displays a 2 digit number */
 void output_render_number(byte theNumber) 
 {
                         // 0    1    2    3    4    5    6    7    8    9    <spc>
@@ -466,24 +466,23 @@ void output_render_number(byte theNumber)
   Serial.print(F("render_number:"));Serial.println(theNumber);
   #endif
   
-  led8x8.clearDisplay(LED8X8_PANEL_0); 
   for(int digit_index=0;digit_index<2;digit_index++)
   {
     
-    currentDigit=theNumber%10; // Retrieve the Digit
+    currentDigit=theNumber%10; // Retrieve the lowest digit
     #ifdef TRACE_OUTPUT_NUMBER 
       Serial.print(F("digit"));Serial.println(currentDigit);
       Serial.print(F("digitBitmap"));Serial.println(digitBitmap[currentDigit],BIN);
     #endif
-    theNumber/=10;            // shift digit for next loop
-    columnBitmap[0]=(digitBitmap[currentDigit]>>4 &     B00001010) // main bits
+
+    columnBitmap[0]=(digitBitmap[currentDigit]>>4 &    B00001010) // main bits
                     | ( digitBitmap[currentDigit]>>3 & B00010100) // fill up left
                     | ( digitBitmap[currentDigit]>>5 & B00000101) // fill up right
                     | ( digitBitmap[currentDigit] &    B00010101); // fill up from middle
   
     columnBitmap[1]=(digitBitmap[currentDigit] & B00010101); // main bits
   
-    columnBitmap[2]=(digitBitmap[currentDigit] &        B00001010) // main bits
+    columnBitmap[2]=(digitBitmap[currentDigit] &       B00001010) // main bits
                     | ( digitBitmap[currentDigit]<<1 & B00010100) // fill up left
                     | ( digitBitmap[currentDigit]>>1 & B00000101) // fill up right
                     | ( digitBitmap[currentDigit] &    B00010101); // fill up from middle
@@ -495,7 +494,8 @@ void output_render_number(byte theNumber)
   Serial.print(F("Col:"));Serial.println(columnBitmap[2-i]|B10000000,BIN);
   #endif
     }
-  
+  theNumber/=10;          // shift digit in input one to the right for next loop
+  if(theNumber==0) break; // leave loop, when upper digit is zero  (keeps other colums untouched)
   }        
                
 }
@@ -520,6 +520,8 @@ void output_setup() {
     output_render_number(i);
     delay(3000);
   }
+  output_render_number(2);
+    delay(3000);
   output_sequence_acknowlegde();
   output_sequence_escape();
 }
