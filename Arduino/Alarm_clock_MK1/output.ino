@@ -7,6 +7,7 @@
 //#define TRACE_OUTPUT_CLOCK_BITSET 1
 //#define TRACE_OUTPUT_SLEEP_BITSET 1
 //#define TRACE_OUTPUT_RING3_BITSET 1
+//#define TRACE_OUTPUT_NUMBER 
 #endif
 
 /* Parameters for Device Connection */
@@ -69,10 +70,15 @@ void output_renderIdleClockScene(int minute_of_the_day,byte alarmIndicator,byte 
   output_renderClockScene(minute_of_the_day, alarmIndicator);
   
 }
-/* ********************************************************************+
- *             Clock Scene
- * ********************************************************************+
- */ 
+
+/* ################   Scenes   #########################################
+ * #####################################################################          
+ */
+
+ 
+/* ***************** Clock Scene *************************************+ 
+*/
+
 void output_renderClockScene(int minute_of_the_day,byte alarmIndicator) {
 
   unsigned int minute_of_the_hour = (minute_of_the_day%60);
@@ -92,10 +98,8 @@ void output_renderClockScene(int minute_of_the_day,byte alarmIndicator) {
   matrix_ring3_bitmap=0;
 
 
-  /* ********** *
-   *   Hour
-   * **********
-   */
+  /* --------  Hour -----------   */
+  
   simple_pattern<<=(2+hour*2); /* this will place hour 0 at bit 2 and 3, 1 at 4+5 and so on */
                                 /* FEDCBA98 76543210 FEDCBA98 76543210 */
                                 /* 00000000 00000000 00000000 00001100  = 0 Hrs */
@@ -169,9 +173,7 @@ void output_renderClockScene(int minute_of_the_day,byte alarmIndicator) {
   #endif 
 
 
-   /* *************
-    *    Minute
-    * ************  */
+  /* --------  Minute  -----------   */
 
   if(alarmIndicator&ALARM_IDC_SHOW_MASK) {
     output_renderMinuteHighresBitmaps(minute_of_the_hour,true) ;                  
@@ -193,15 +195,10 @@ void output_renderClockScene(int minute_of_the_day,byte alarmIndicator) {
 
  output_matrix_displayUpdate();
 };
-/* ********************************************************************+
- *            Render Highres Minute Bitmaps
- * ********************************************************************+
- */
 
-/* ********************************************************************+
- *           Scenes
- * ********************************************************************+
- */
+
+/* ***************** Stop Procedure Scene  *************************************+ 
+*/
 
 void output_renderStopProcedureScene(int value) {
     clock_hour_bitmap=0;
@@ -211,6 +208,10 @@ void output_renderStopProcedureScene(int value) {
     output_matrix_displayUpdate();
 }
 
+
+/* ***************** Sleep Procedure Scene  *************************************+ 
+*/
+
 void output_renderSleepScene(int minutes) {
     clock_hour_bitmap=0;
     flag_indicator_bitmap=0;
@@ -219,13 +220,42 @@ void output_renderSleepScene(int minutes) {
     output_matrix_displayUpdate();
 }
 
+/* ***************** Letter Scene  *************************************+ 
+*/
 
-/* ********************************************************************+
- *            sequences (Animations)
- * ********************************************************************+
+/*     8 4 2 1 8 4 2 1        8 4 2 1 8 4 2 1      8 4 2 1 8 4 2 1                                                     
+ * 8                       8                    8                                    
+ * 4     x x x x x         4      X X X         4      X X X                            
+ * 2         x             2      X     X       2      X     X                            
+ * 1         x             1      X     X       1      X X X                                 
+ * 8         x             8      X     X       8      X X                               
+ * 4         x             4      X     X       4      X   X                             
+ * 2         x             2      X X X         2      X     X                         
+ * 1                       1                    1                                     
+ *        time                   Demo                  Radio
+ */ 
+void output_renderLetterScene(byte letter_index) 
+{
+   const byte colPattern[][5]={      /* twisted 90 degree to left */
+    /* 0 = D */ {0x00,0x7e,0x42,0x42,0x3c},
+    /* 1 = T */ {0x40,0x40,0x7e,0x40,0x40},
+    /* 2 = R */ {0x00,0x7e,0x58,0x54,0x22}
+   };
+   
+   led8x8.clearDisplay(LED8X8_PANEL_0); 
+   for(byte i=0;i<5;i++){
+       led8x8.setRow(LED8X8_PANEL_0,i+1,mirroredPattern(colPattern[letter_index][i]));     /* using row to turn picture-90 degree */
+   }
+}
+
+
+/* ################     sequences (Animations)   ########################
+ * #####################################################################          
  */
 
- void output_sequence_acknowlegde(){
+/* ***************** sequence_acknowlegde  *************************************+ 
+*/
+
   /*     8 4 2 1 8 4 2 1
    * 7                 X    
    * 6               X X 
@@ -237,6 +267,7 @@ void output_renderSleepScene(int minutes) {
    * 0         X         
    */
 
+void output_sequence_acknowlegde(){
    const byte colPattern[7]={0x0c,0x06,0x03,0x06,0x1c,0x78,0xe0}; /* twisted */
    led8x8.clearDisplay(LED8X8_PANEL_0); 
    for(byte i=0;i<sizeof(colPattern);i++){
@@ -244,21 +275,31 @@ void output_renderSleepScene(int minutes) {
        delay(30);
    }
    delay(300);
- }
-    
+}
+
+
+/* ***************** sequence_escape  *************************************+ 
+*/    
+
 void output_sequence_escape(){
    for(byte i=0;i<8;i++){
        led8x8.setColumn(LED8X8_PANEL_0,7-i,0); /* using column to turn picture-90 degree */    
        delay(20);
    }
    delay(100);  
- }
+}
 
- void output_sequence_snooze(){
+ 
+/* ***************** sequence_snooze  *************************************+ 
+*/
+
+void output_sequence_snooze(){
    output_sequence_acknowlegde();
- }
+}
 
- void output_sequence_watchdog_alert()
+/* ***************** sequence_watchdog_alert  *************************************+ 
+*/
+
   /*     8 4 2 1 8 4 2 1
    * 7   x x x x x x x x    
    * 6   x           x x 
@@ -269,15 +310,15 @@ void output_sequence_escape(){
    * 1   x           x x
    * 0   x x x x x x x x 
    */
- {
-   const byte colPattern[]={0xff,0x81,0xa5,0xa5,0xa5,0xbd,0xff,0xff}; /* twisted */
+void output_sequence_watchdog_alert()
+{
+   const byte colPattern[]={0xff,0x81,0xa5,0xa5,0xa5,0xbd,0xff}; /* twisted */
    led8x8.clearDisplay(LED8X8_PANEL_0); 
    for(byte i=0;i<sizeof(colPattern);i++){
        led8x8.setRow(LED8X8_PANEL_0,i,mirroredPattern(colPattern[i]));     /* using row to turn picture-90 degree */
    }
-   delay(1000);
-  
- }
+   delay(1000); 
+}
 
 /* *********************************************************************
 /*                    internal functions                                  */
@@ -400,6 +441,65 @@ void output_renderMinuteHighresBitmaps(int minutes,bool zeroIs60)
     #endif
  }
 
+/* *********    Render number *******************************+
+ */
+
+/*     8 4 2 1 8 4 2 1        8 4 2 1 8 4 2 1      8 4 2 1 8 4 2 1                                                     
+ *                                                                
+ * 1'  X 1'X       X       1  X 1'X   X 1'X     1  X   X   X 1'X   X 1'X   X 1'X   X 1'X     X 1'X
+ * 8   8'  8       8       8      8       8     8  8'  8   8'      8'          8   8'  8     8'  8
+ * 4   x   X       X       4  X 4 X   X 4 X     4  X 4 X   X 4 X   X 4 X       X   X 4 X     X 4 X
+ * 2   2'  2       2       2  2'          2     2      2       2   2'  2       2   2'  2         2
+ * 1   x 1 X       X       1  X 1 X   X 1 X     1      X   X 1 X   X 1 X       X   X 1 X     X 1 X
+ *                                                                                       
+ *                                                                                     
+ */ 
+
+void output_render_number(byte theNumber) 
+{
+                        // 0    1    2    3    4    5    6    7    8    9    <spc>
+  byte digitBitmap[11]={0xbb,0x0a,0x3d,0x1f,0x8e,0x97,0xb7,0x1a,0xbf,0x9f};
+  byte columnBitmap[3];
+  byte currentDigit;
+
+  #ifdef TRACE_OUTPUT_NUMBER 
+  Serial.print(F("render_number:"));Serial.println(theNumber);
+  #endif
+  
+  led8x8.clearDisplay(LED8X8_PANEL_0); 
+  for(int digit_index=0;digit_index<2;digit_index++)
+  {
+    
+    currentDigit=theNumber%10; // Retrieve the Digit
+    #ifdef TRACE_OUTPUT_NUMBER 
+      Serial.print(F("digit"));Serial.println(currentDigit);
+      Serial.print(F("digitBitmap"));Serial.println(digitBitmap[currentDigit],BIN);
+    #endif
+    theNumber/=10;            // shift digit for next loop
+    columnBitmap[0]=(digitBitmap[currentDigit]>>4 &     B00001010) // main bits
+                    | ( digitBitmap[currentDigit]>>3 & B00010100) // fill up left
+                    | ( digitBitmap[currentDigit]>>5 & B00000101) // fill up right
+                    | ( digitBitmap[currentDigit] &    B00010101); // fill up from middle
+  
+    columnBitmap[1]=(digitBitmap[currentDigit] & B00010101); // main bits
+  
+    columnBitmap[2]=(digitBitmap[currentDigit] &        B00001010) // main bits
+                    | ( digitBitmap[currentDigit]<<1 & B00010100) // fill up left
+                    | ( digitBitmap[currentDigit]>>1 & B00000101) // fill up right
+                    | ( digitBitmap[currentDigit] &    B00010101); // fill up from middle
+
+    for(int i=0;i<3;i++)
+    {
+        led8x8.setRow(LED8X8_PANEL_0,6-i-digit_index*4,mirroredPattern((columnBitmap[2-i])<<2));
+          #ifdef TRACE_OUTPUT_NUMBER 
+  Serial.print(F("Col:"));Serial.println(columnBitmap[2-i]|B10000000,BIN);
+  #endif
+    }
+  
+  }        
+               
+}
+
 
 void output_setup() {
   /*
@@ -412,6 +512,14 @@ void output_setup() {
   /* and clear the display */
   led8x8.clearDisplay(LED8X8_PANEL_0);
   // output_sequence_watchdog_alert();
+  /*for(int i=0;i<3;i++) {
+    output_renderLetterScene(i);
+    delay(2000);
+  }*/
+  for(int i=50;i<95;i+=11) {
+    output_render_number(i);
+    delay(3000);
+  }
   output_sequence_acknowlegde();
   output_sequence_escape();
 }

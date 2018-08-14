@@ -131,7 +131,7 @@ bool input_masterSwitchIsSet() {
   #endif
   return (tick_state&INPUT_BUTTON_C_BITS)==INPUT_BUTTON_C_ON_PATTERN; 
 }
-bool input_checkEncoderChangeEvent(){
+bool input_hasEncoderChangeEvent(){
   return input_encoder_change_event;
 }
 

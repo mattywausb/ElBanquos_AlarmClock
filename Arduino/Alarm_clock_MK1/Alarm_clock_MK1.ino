@@ -296,12 +296,11 @@ void enter_STATE_IDLE(){
 
 void process_STATE_IDLE(){
  if(input_snoozeGotPressed()) {    
-    delay(3000); 
     enter_STATE_SLEEP_SET();
     return;
   }
   
-  if(input_checkEncoderChangeEvent()) {enter_STATE_ALARM_INFO();return;}
+  if(input_hasEncoderChangeEvent()) {enter_STATE_ALARM_INFO();return;}
   if(input_selectGotPressed()) {enter_STATE_ALARM_CHANGE();return;}
  
   /* Check RDS Data when necessary */
@@ -358,7 +357,7 @@ void process_STATE_WAKEUP(){
     return;
   }
   
-  if(input_checkEncoderChangeEvent()) {enter_STATE_STOP_PROCEDURE();return;}
+  if(input_hasEncoderChangeEvent()) {enter_STATE_STOP_PROCEDURE();return;}
 
   if( clock_snooze_stop_time!=TRIGGER_IS_OFF) alarmIndicator|=ALARM_INDICATOR_SNOOZE;
   if(!input_masterSwitchIsSet()) alarmIndicator|=ALARM_INDICATOR_OFF;
@@ -444,7 +443,7 @@ void process_STATE_ALARM_INFO(){
             enter_STATE_IDLE(); return;
           }
     
-    if(input_checkEncoderChangeEvent()) input_getEncoderValue(); 
+    if(input_hasEncoderChangeEvent()) input_getEncoderValue(); 
     
     if(input_selectGotPressed()) {
              enter_STATE_ALARM_CHANGE();return;
@@ -482,7 +481,7 @@ void process_STATE_ALARM_CHANGE(){
       }
 
   #ifdef DEBUG_HIGHRES_ALARMSET
-    if(input_checkEncoderChangeEvent()) {
+    if(input_hasEncoderChangeEvent()) {
       trace_printTime(input_getEncoderValue());
       Serial.println();
     }
