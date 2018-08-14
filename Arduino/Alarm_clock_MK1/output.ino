@@ -245,15 +245,15 @@ void output_renderUint32Time(uint32_t value,byte debug_screen_number)
 {
   byte seconds=(value/  1000)%60;
   byte minutes=(value/ 60000)%60;
-  byte hours=(value/  360000)%24;
-  byte days=(value/ 86400000)%60;
+  byte hours=(value/ 3600000)%24;
+  byte days=(value/ 86400000)%100;
 
   led8x8.setColumn(LED8X8_PANEL_0,7,0xff<<(8-debug_screen_number));
    for(byte col=4;col<7;col++) led8x8.setColumn(LED8X8_PANEL_0,col,0);
-  led8x8.setColumn(LED8X8_PANEL_0,3,(days/10)<<5|(days%10));
-  led8x8.setColumn(LED8X8_PANEL_0,2,(hours/10)<<5|(hours%10));  
-  led8x8.setColumn(LED8X8_PANEL_0,1,(minutes/10)<<5|(minutes%10));
-  led8x8.setColumn(LED8X8_PANEL_0,0,(seconds/10)<<5|(seconds%10)); 
+  led8x8.setColumn(LED8X8_PANEL_0,3,(days/10)<<4|(days%10));
+  led8x8.setColumn(LED8X8_PANEL_0,2,((hours/10)<<4|(hours%10)));  
+  led8x8.setColumn(LED8X8_PANEL_0,1,(minutes/10)<<4|(minutes%10));
+  led8x8.setColumn(LED8X8_PANEL_0,0,(seconds/10)<<4|(seconds%10)); 
    
 }
 
@@ -576,6 +576,21 @@ void output_render_number(byte theNumber,byte top_row_pattern)
                
 }
 
+void output_renderUint32Time_TEST()
+{
+  for(uint32_t time=0;time <28*3600000;time+=60000)
+  {
+    output_renderUint32Time(time,0);
+    delayMicroseconds(500);
+    if(time==3600000) delay(3000);
+    if(time==6*3600000) delay(3000);
+    if(time==12*3600000) delay(3000);
+    if(time==18*3600000) delay(3000);
+    if(time==24*3600000) delay(3000);
+    if(time==25*3600000) delay(3000);
+    if(time==28*3600000) delay(3000);
+  }
+}
 
 void output_setup() {
   /*
@@ -587,6 +602,8 @@ void output_setup() {
   led8x8.setIntensity(LED8X8_PANEL_0,0);
   /* and clear the display */
   led8x8.clearDisplay(LED8X8_PANEL_0);
+
+  //output_renderUint32Time_TEST();
 
   output_sequence_acknowlegde();
   output_sequence_escape();
