@@ -27,6 +27,7 @@ enum CLOCK_STATE {
   STATE_ALARM_INFO,  // Show Alarm time
   STATE_ALARM_CHANGE,  // Change and set Alarm time
   STATE_SLEEP_SET,  // Activate Sleep and change sleep time
+  STATE_DEBUG,  // Show some explicit values for debugging
   STATE_DEMO  // show fast time progressing
 };
 CLOCK_STATE clock_state = STATE_IDLE; 
@@ -67,9 +68,9 @@ void setup() {
  Serial.println(F("--------->Start<------------"));
  #endif
  
-  input_setup(0, MINUTES_PER_DAY-1,15); /* Encoder Range 24 hoursis,stepping quater hours */
   radio_setup();
   output_setup();
+  input_setup(0, MINUTES_PER_DAY-1,15); /* Encoder Range 24 hoursis,stepping quater hours */
 
   clock_alarm_time[0]=DEFAULT_ALARM_TIME; /* Fall back alarm */
 }
@@ -135,6 +136,8 @@ void loop() {
     
     case STATE_SLEEP_SET:       process_STATE_SLEEP_SET(); break;
 
+    case STATE_DEBUG:  process_STATE_DEBUG(); break;
+    
     case STATE_DEMO:  process_STATE_DEMO(); break;
 
  /* ------------------------------------------------------------------ */  
@@ -498,7 +501,7 @@ void enter_STATE_SLEEP_SET(){
   int sleepMinutes=45;
   if(clock_sleep_stop_time!=TRIGGER_IS_OFF) sleepMinutes=clock_sleep_stop_time-clock_getCurrentTime();
   if(sleepMinutes<0) sleepMinutes+MINUTES_PER_DAY;
-  input_setEncoderRange(0, 75,5,sleepMinutes); // 65,70,75 for debug and demo
+  input_setEncoderRange(0, 70,5,sleepMinutes); // 65,70 for debug and demo
   output_renderSleepScene(input_getEncoderValue());
   radio_switchOn();
   #ifdef TRACE_CLOCK
@@ -558,10 +561,82 @@ void process_STATE_SLEEP_SET(){
               enter_STATE_DEMO();
               return;  
             }
-            break;                
+            break;  
+      case 70:
+            if(input_selectGotPressed()) 
+            {
+              enter_STATE_DEBUG();
+              return;  
+            }
+            break;               
      }
      output_renderLetterScene((input_getEncoderValue()-65)/5);
   }
+}
+
+/* *************** STATE_DEBUG ***************** */
+void enter_STATE_DEBUG(){
+  clock_state=STATE_DEBUG; 
+  input_setEncoderRange(0, 6,1,0);
+  input_setEncoderValue(0);
+  #ifdef TRACE_CLOCK
+         Serial.println(F("#DEBUG"));
+  #endif
+}
+
+void process_STATE_DEBUG(){
+
+  int strength_int;
+  
+       if(input_selectGotPressed() || input_getSecondsSinceLastEvent()>30) {
+            output_sequence_escape();
+            enter_STATE_IDLE();
+            return;  
+       }
+       if(input_snoozeGotPressed()) {
+        trace_printTime(clock_getCurrentTime());
+       }
+       switch(input_getEncoderValue()) {
+        case 0:           /* time hour */
+                if(clock_getCurrentTime()>=0) 
+                {
+                  output_renderDebugDigitScene(clock_getCurrentTime()/60,1);                
+                } else {
+                  output_renderDebugLetterScene(2,1);                
+                }
+                
+                break;
+        case 1:           /* time minute */
+                if(clock_getCurrentTime()>=0) 
+                {
+                  output_renderDebugDigitScene(clock_getCurrentTime()%60,2);
+                } else {
+                  output_renderDebugLetterScene(2,2);                
+                }
+                break;   
+        case 2:           /* time trust (complete) */
+                output_renderTimeTrustScreen((clock_rds_trust*16)/RDS_TRUST_GOOD);
+                break;     
+        case 3:           /* signal strenght */
+                strength_int=radio_getSignalStrength();
+                output_renderDebugDigitScene((strength_int*100)>>8,4);
+                break;   
+        case 4:  /* upper frequency digits (wihtout 100 part)*/
+                output_renderDebugDigitScene((radio_getFrequency()/100)%100,5);
+                break;
+
+        case 5:  /* lower  frequency */
+                output_renderDebugDigitScene(radio_getFrequency()%100,6);
+                break;
+        case 6:  /* Runtime in millis */
+                output_renderUint32Value(millis(),7);
+                break;
+                
+        default: 
+             output_sequence_watchdog_alert();
+             break;
+       }
+        
 }
 
 /* *************** STATE_DEMO ***************** */

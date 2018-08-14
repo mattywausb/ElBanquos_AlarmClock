@@ -176,6 +176,12 @@ uint8_t radio_getSignalStrength()
   return radio_info.rssi;
 }
 
+int radio_getFrequency()
+{
+  if(radio_isPlaying()) return stationPreset[currentPlayStation];
+  return stationPreset[currentRdsStation];
+}
+
 
 /* ################   internal functions   #############################
  * #####################################################################          
