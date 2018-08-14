@@ -241,6 +241,22 @@ void output_renderDebugLetterScene(int letter_index, byte debug_screen_number)
   output_render_letter(letter_index,0xff>>(8-debug_screen_number));
 }
 
+void output_renderUint32Time(uint32_t value,byte debug_screen_number)
+{
+  byte seconds=(value/  1000)%60;
+  byte minutes=(value/ 60000)%60;
+  byte hours=(value/  360000)%24;
+  byte days=(value/ 86400000)%60;
+
+  led8x8.setColumn(LED8X8_PANEL_0,7,0xff<<(8-debug_screen_number));
+   for(byte col=4;col<7;col++) led8x8.setColumn(LED8X8_PANEL_0,col,0);
+  led8x8.setColumn(LED8X8_PANEL_0,3,(days/10)<<5|(days%10));
+  led8x8.setColumn(LED8X8_PANEL_0,2,(hours/10)<<5|(hours%10));  
+  led8x8.setColumn(LED8X8_PANEL_0,1,(minutes/10)<<5|(minutes%10));
+  led8x8.setColumn(LED8X8_PANEL_0,0,(seconds/10)<<5|(seconds%10)); 
+   
+}
+
 void output_renderUint32Value(uint32_t value,byte debug_screen_number)
 {
   for(byte col=0;col<7;col++) {
@@ -572,22 +588,6 @@ void output_setup() {
   /* and clear the display */
   led8x8.clearDisplay(LED8X8_PANEL_0);
 
-  /*
-  // output_sequence_watchdog_alert();
-  for(int i=0;i<3;i++) {
-    output_render_letter(i,i);
-    delay(2000);
-  }
-  for(int i=0;i<5;i+=1) {
-    output_render_number(50+i*11,i);
-    delay(2000);
-  }
-  output_render_number(2,0);
-    delay(2000);*/
-  for(int i=0;i<20;i++) {
-      output_renderUint32Value(millis(),6);
-      delay(500);
-  }    
   output_sequence_acknowlegde();
   output_sequence_escape();
 }

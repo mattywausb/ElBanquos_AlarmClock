@@ -594,7 +594,8 @@ void process_STATE_DEBUG(){
             return;  
        }
        if(input_snoozeGotPressed()) {
-        trace_printTime(clock_getCurrentTime());
+        if(radio_isPlaying()) radio_switchOff();
+        else radio_switchOn();
        }
        switch(input_getEncoderValue()) {
         case 0:           /* time hour */
@@ -629,7 +630,7 @@ void process_STATE_DEBUG(){
                 output_renderDebugDigitScene(radio_getFrequency()%100,6);
                 break;
         case 6:  /* Runtime in millis */
-                output_renderUint32Value(millis(),7);
+                output_renderUint32Time(millis(),7);
                 break;
                 
         default: 
