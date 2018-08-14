@@ -55,6 +55,117 @@ unsigned long clock_last_wakeup_stop_millis=0;
 byte clock_rds_trust=0;
 
 
+
+/* ************************************************************
+ *     Main Setup
+ * ************************************************************
+ */
+
+void setup() {
+ #ifdef TRACE_ON 
+ Serial.begin(9600);
+ Serial.println(F("--------->Start<------------"));
+ #endif
+ 
+  output_setup();
+  input_setup(0, MINUTES_PER_DAY-1,15); /* Encoder Range 24 hoursis,stepping quater hours */
+  radio_setup();
+
+  clock_alarm_time[0]=DEFAULT_ALARM_TIME; /* Fall back alarm */
+}
+
+
+/* ****************Main Loop********************************** 
+ * ************************************************************
+ */
+
+void loop() { 
+
+
+  /* Inputs */
+  input_switches_scan_tick();
+  radio_loop_tick();
+
+
+  /* Sleep Timer logic */
+  if(clock_getCurrentTime()==clock_sleep_stop_time) {
+    radio_switchOff();
+    clock_sleep_stop_time=TRIGGER_IS_OFF;
+    #ifdef TRACE_CLOCK
+         Serial.println(F("SLEEP timed out"));
+    #endif
+  }
+
+  /* Alarm on logic */
+  if(clock_getCurrentTime()==clock_alarm_time[clock_focussed_alarmIndex]
+   &&clock_alarm_stop_time==TRIGGER_IS_OFF          // TBD: for multi alarm time, check if new alarm is running
+   &&clock_state != STATE_ALARM_CHANGE
+   &&clock_state != STATE_WAKEUP
+   &&input_masterSwitchIsSet()
+   &&(millis()-clock_last_wakeup_stop_millis>60000)  // after active stop, we must wait at least 60 seconds to perevent reactivation in case of fast reaction
+   ) {
+      enter_STATE_WAKEUP();
+      return;
+  }
+
+  /* Snooze end logic */
+  if(clock_getCurrentTime()==clock_snooze_stop_time) {
+    resume_STATE_WAKEUP();
+    return;
+  }
+
+  /* Alarm off logic */
+  if(clock_getCurrentTime()==clock_alarm_stop_time) {
+    exit_STATE_WAKEUP();
+    return;
+  }
+
+  
+  /* UI logic */
+  switch (clock_state) {
+    
+    case STATE_IDLE:            process_STATE_IDLE(); break;
+          
+    case STATE_ALARM_INFO:      process_STATE_ALARM_INFO(); break;
+          
+    case STATE_ALARM_CHANGE:    process_STATE_ALARM_CHANGE(); break;
+
+    case STATE_WAKEUP:          process_STATE_WAKEUP(); break;
+    case STATE_STOP_PROCEDURE:  process_STATE_STOP_PROCEDURE(); break;
+    
+    case STATE_SLEEP_SET:       process_STATE_SLEEP_SET(); break;
+
+    case STATE_DEMO:  process_STATE_DEMO(); break;
+
+ /* ------------------------------------------------------------------ */  
+  
+    default: output_renderClockScene(TIME_UNKNOWN,ALARM_INDICATOR_ON); 
+      output_matrix_displayUpdate() ;
+      delay(1000);
+      enter_STATE_IDLE();
+  }
+
+  /* output */
+  /* is managed by scenes and sequences call from state functions */
+  /* --- no output code here ------*/
+
+  #ifdef TRACE_CLOCK
+  static int last_traced_time;
+  if( last_traced_time!=clock_getCurrentTime()) {
+    last_traced_time=clock_getCurrentTime();
+    Serial.print(F("Cur :"));
+    Serial.print(last_traced_time/60);
+    Serial.print(":");
+    Serial.print(last_traced_time%60);  
+    Serial.print(F(" Alm:"));
+    Serial.print(clock_alarm_time[clock_focussed_alarmIndex]/60);
+    Serial.print(F(":"));
+    Serial.println(clock_alarm_time[clock_focussed_alarmIndex]%60);  
+  }
+  #endif
+
+}
+
 /* ************************************************************
  *     Clock functions
  * ************************************************************
@@ -167,6 +278,12 @@ void trace_printTime(int timeValue)
     Serial.print(timeValue%60);  
 }
 
+
+/* ************************************************************
+ *    STATE functions
+ * ************************************************************
+ */
+
 /* *************** STATE_IDLE ***************** */
 
 void enter_STATE_IDLE(){
@@ -178,7 +295,8 @@ void enter_STATE_IDLE(){
 }
 
 void process_STATE_IDLE(){
- if(input_snoozeGotPressed()) {     
+ if(input_snoozeGotPressed()) {    
+    delay(3000); 
     enter_STATE_SLEEP_SET();
     return;
   }
@@ -455,113 +573,4 @@ void process_STATE_DEMO(){
 }
 
 
-/* ************************************************************
- *     Main Setup
- * ************************************************************
- */
 
-void setup() {
- #ifdef TRACE_ON 
- Serial.begin(9600);
- Serial.println(F("--------->Start<------------"));
- #endif
- 
-  output_setup();
-  input_setup(0, MINUTES_PER_DAY-1,15); /* Encoder Range 24 hoursis,stepping quater hours */
-  radio_setup();
-
-  clock_alarm_time[0]=DEFAULT_ALARM_TIME; /* Fall back alarm */
-}
-
-
-/* ************************************************************
- *     Main Loop
- * ************************************************************
- */
-
-void loop() { 
-
-
-  /* Inputs */
-  input_switches_scan_tick();
-  radio_loop_tick();
-
-
-  /* Sleep Timer logic */
-  if(clock_getCurrentTime()==clock_sleep_stop_time) {
-    radio_switchOff();
-    clock_sleep_stop_time=TRIGGER_IS_OFF;
-    #ifdef TRACE_CLOCK
-         Serial.println(F("SLEEP timed out"));
-    #endif
-  }
-
-  /* Alarm on logic */
-  if(clock_getCurrentTime()==clock_alarm_time[clock_focussed_alarmIndex]
-   &&clock_alarm_stop_time==TRIGGER_IS_OFF          // TBD: for multi alarm time, check if new alarm is running
-   &&clock_state != STATE_ALARM_CHANGE
-   &&clock_state != STATE_WAKEUP
-   &&input_masterSwitchIsSet()
-   &&(millis()-clock_last_wakeup_stop_millis>60000)  // after active stop, we must wait at least 60 seconds to perevent reactivation in case of fast reaction
-   ) {
-      enter_STATE_WAKEUP();
-      return;
-  }
-
-  /* Snooze end logic */
-  if(clock_getCurrentTime()==clock_snooze_stop_time) {
-    resume_STATE_WAKEUP();
-    return;
-  }
-
-  /* Alarm off logic */
-  if(clock_getCurrentTime()==clock_alarm_stop_time) {
-    exit_STATE_WAKEUP();
-    return;
-  }
-
-  
-  /* UI logic */
-  switch (clock_state) {
-    
-    case STATE_IDLE:            process_STATE_IDLE(); break;
-          
-    case STATE_ALARM_INFO:      process_STATE_ALARM_INFO(); break;
-          
-    case STATE_ALARM_CHANGE:    process_STATE_ALARM_CHANGE(); break;
-
-    case STATE_WAKEUP:          process_STATE_WAKEUP(); break;
-    case STATE_STOP_PROCEDURE:  process_STATE_STOP_PROCEDURE(); break;
-    
-    case STATE_SLEEP_SET:       process_STATE_SLEEP_SET(); break;
-
-    case STATE_DEMO:  process_STATE_DEMO(); break;
-
- /* ------------------------------------------------------------------ */  
-  
-    default: output_renderClockScene(TIME_UNKNOWN,ALARM_INDICATOR_ON); 
-      output_matrix_displayUpdate() ;
-      delay(1000);
-      enter_STATE_IDLE();
-  }
-
-  /* output */
-  /* is managed by scenes and sequences call from state functions */
-  /* --- no output code here ------*/
-
-  #ifdef TRACE_CLOCK
-  static int last_traced_time;
-  if( last_traced_time!=clock_getCurrentTime()) {
-    last_traced_time=clock_getCurrentTime();
-    Serial.print(F("Cur :"));
-    Serial.print(last_traced_time/60);
-    Serial.print(":");
-    Serial.print(last_traced_time%60);  
-    Serial.print(F(" Alm:"));
-    Serial.print(clock_alarm_time[clock_focussed_alarmIndex]/60);
-    Serial.print(F(":"));
-    Serial.println(clock_alarm_time[clock_focussed_alarmIndex]%60);  
-  }
-  #endif
-
-}

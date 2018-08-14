@@ -31,13 +31,15 @@
  
 volatile bool setupComplete=false;
 
-
-
 volatile unsigned int raw_state_register[INPUT_PORT_COUNT];
 volatile unsigned int raw_state;
 volatile unsigned int debounced_state=0;  /* Debounced state with history to last cycle managed by the ISR */
 unsigned int tick_state=0;                /* State provided in the actual tick, with change indication to last tick */
 
+#define INPUT_WATCHDOG_TRIGGER_TIME 2000
+
+volatile unsigned long last_input_scan_time;
+volatile bool watchdog_triggered=false;
                          
 #define INPUT_BITIDX_ENCODER_A 0
 #define INPUT_BITIDX_ENCODER_B 2
@@ -67,18 +69,17 @@ unsigned int tick_state=0;                /* State provided in the actual tick, 
 #define INPUT_BUTTON_C_ON_PATTERN        0x0300
 #define INPUT_BUTTON_C_RELEASED_PATTERN  0x0200
 
+
 /* Variable for reducing cpu usage */
 volatile unsigned long input_last_change_time=0;
+
 
 /* Variables for debounce handling */
 
 #define INPUT_CURRENT_BITS 0x5555
 #define INPUT_PREVIOUS_BITS 0xaaaa
 
-
-
-
-
+ 
 /* Variables for encoder tracking */
 
 #define ENCODER_IDLE_STATE 0
@@ -191,14 +192,17 @@ void input_setup(int encoderRangeMin, int encoderRangeMax,byte encoderStepSize) 
 
 ISR(TIMER1_COMPA_vect)       
  
-{ 
-
-
-
-                              
+{                             
   TCNT1 = 0;             // reset the counter
   
   if(!setupComplete) return;
+  if(watchdog_triggered==false && millis()-last_input_scan_time>INPUT_WATCHDOG_TRIGGER_TIME) 
+  {
+    noInterrupts(); 
+    watchdog_triggered=true;    
+    output_sequence_watchdog_alert();
+    interrupts();
+  }
   
   /* copy debounce of state of last cycle  to history bits */
   debounced_state=(debounced_state&INPUT_CURRENT_BITS)<<1
@@ -277,6 +281,8 @@ void input_switches_scan_tick() {  /* After every tick, especially the flank eve
   tick_state=(tick_state&INPUT_CURRENT_BITS)<<1
                  |(debounced_state&INPUT_CURRENT_BITS);
  
+  /* feed the watchdog */
+  last_input_scan_time=millis();watchdog_triggered=false;
   
 } // void input_switches_tick()
 

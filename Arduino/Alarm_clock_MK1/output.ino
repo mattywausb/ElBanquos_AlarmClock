@@ -237,7 +237,7 @@ void output_renderSleepScene(int minutes) {
    * 0         X         
    */
 
-   const byte colPattern[7]={0x0c,0x06,0x03,0x06,0x1c,0x78,0xe0};
+   const byte colPattern[7]={0x0c,0x06,0x03,0x06,0x1c,0x78,0xe0}; /* twisted */
    led8x8.clearDisplay(LED8X8_PANEL_0); 
    for(byte i=0;i<sizeof(colPattern);i++){
        led8x8.setRow(LED8X8_PANEL_0,i,mirroredPattern(colPattern[i]));     /* using row to turn picture-90 degree */
@@ -256,6 +256,27 @@ void output_sequence_escape(){
 
  void output_sequence_snooze(){
    output_sequence_acknowlegde();
+ }
+
+ void output_sequence_watchdog_alert()
+  /*     8 4 2 1 8 4 2 1
+   * 7   x x x x x x x x    
+   * 6   x           x x 
+   * 5   x   x x x x x x   
+   * 4   x         X X x   
+   * 3   x         X X x
+   * 2   x   X x x x x x  
+   * 1   x           x x
+   * 0   x x x x x x x x 
+   */
+ {
+   const byte colPattern[]={0xff,0x81,0xa5,0xa5,0xa5,0xbd,0xff,0xff}; /* twisted */
+   led8x8.clearDisplay(LED8X8_PANEL_0); 
+   for(byte i=0;i<sizeof(colPattern);i++){
+       led8x8.setRow(LED8X8_PANEL_0,i,mirroredPattern(colPattern[i]));     /* using row to turn picture-90 degree */
+   }
+   delay(1000);
+  
  }
 
 /* *********************************************************************
@@ -390,6 +411,7 @@ void output_setup() {
   led8x8.setIntensity(LED8X8_PANEL_0,0);
   /* and clear the display */
   led8x8.clearDisplay(LED8X8_PANEL_0);
+  // output_sequence_watchdog_alert();
   output_sequence_acknowlegde();
   output_sequence_escape();
 }
