@@ -318,7 +318,9 @@ static unsigned long evaluation_time;
 
 void callIdleScene(int minute_of_the_day, byte alarmIndicator)
 {
-  if(minute_of_the_day!=TIME_UNKNOWN) output_renderClockScene(minute_of_the_day,alarmIndicator);
+  if(minute_of_the_day!=TIME_UNKNOWN) {
+    output_renderClockScene((minute_of_the_day+PRESENTATION_SHIFT_MINUTES)%MINUTES_PER_DAY,alarmIndicator);
+  }
   else output_renderTimeTrustScene();
 }
 

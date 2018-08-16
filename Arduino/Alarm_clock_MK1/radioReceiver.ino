@@ -17,7 +17,7 @@
 
 #ifdef TRACE_ON
 #define TRACE_RADIO 1
-//#define DEBUG_RDS_MOCKUP 1
+#define DEBUG_RDS_MOCKUP 1
 #endif
 
 
@@ -148,7 +148,8 @@ void radio_switchOff(){
 
 int radio_getLastRdsTimeInfo() { 
   #ifdef DEBUG_RDS_MOCKUP
-     return 16*60+29;
+//     return 16*60+29;
+     return 23*60+54;
   #endif
   return radio_rdsTimeInfo;
   };
@@ -156,7 +157,7 @@ int radio_getLastRdsTimeInfo() {
 
 unsigned long radio_getRdsTimeAge() {  /* Returns Age of the rds information in seconds (600000= 10 min = infinity) */
   #ifdef DEBUG_RDS_MOCKUP
-  return true;
+  return 0;
   #endif
   if(radio_lastRdsCatchTime==0) return 600000; // obviously we never have seen anything
   return(millis()-radio_lastRdsCatchTime);

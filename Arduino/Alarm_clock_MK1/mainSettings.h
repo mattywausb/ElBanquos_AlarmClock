@@ -5,6 +5,7 @@ typedef  int MinutesOfDay_t;
 /* Parameters for Display preferences */
 #define MINUTE_FULL_CIRCLE_THRESHOLD 4  // Minute until we will show full circle
 #define MINUTE_SHIFT_THRESHOLD 45        // Minute that will shift hour gap by 1 pixel
+#define PRESENTATION_SHIFT_MINUTES  5 // Minutes, the whole presentation of the current time will be shiftet (+5 means, time will appear 5 Minutes early)
 
 #define ALARM_DURATION  60  // Number of Minutes the Radio will play after last alarm trigger
 #define SNOOZE_DURATION 10   // Number of Minutes for the snooze time
