@@ -198,10 +198,7 @@ ISR(TIMER1_COMPA_vect)
   if(!setupComplete) return;
   if(watchdog_triggered==false && millis()-last_input_scan_time>INPUT_WATCHDOG_TRIGGER_TIME) 
   {
-    noInterrupts(); 
-    watchdog_triggered=true;    
-    output_sequence_watchdog_alert();
-    interrupts();
+    asm volatile ("  jmp 0");
   }
   
   /* copy debounce of state of last cycle  to history bits */

@@ -700,6 +700,8 @@ void process_STATE_DEMO(){
   static unsigned long demo_prev_frame_time=0;
   
           if(input_snoozeGotPressed()||input_selectGotPressed() || input_getSecondsSinceLastEvent()>180) {
+            output_sequence_watchdog_alert();
+            delay(4000);
             output_sequence_escape();
             enter_STATE_IDLE();
             return;  
