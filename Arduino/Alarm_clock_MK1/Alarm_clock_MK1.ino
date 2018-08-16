@@ -38,22 +38,32 @@ CLOCK_STATE clock_state = STATE_IDLE;
 #define RDS_TRUST_GOOD 20         // Highest trust you can get
 #define RDS_TRUST_ACCEPTABLE 10   // Minimal trust to be used
 #define RDS_TRUST_CANDIDATE 4     // Number of consecutive occurences to be protected from instant replacement
-#define RDS_DERIVATION_TOLERANCE 3 // Minutes of derivation, we accept as correction
+#define RDS_DERIVATION_TOLERANCE 10000 // half of millisecods we accept derivation from progress calculateion
 #define RDS_SCAN_COOLDOWN_TIME  750   // Milliseconds before we use the next RDS Time Telegram
 //#define RDS_MAX_WAIT_TIME  300000    // after 5 Minutes (300 seconds) with no signal we change channel 
 #define RDS_MAX_WAIT_TIME  150000    // after 2,5 Minutes (150 seconds) with no signal we change channel 
 #define BAD_TRY_UNTIL_CHANNEL_CHANGE 14 // Number of unsuccedfull tries until we change RDS channel
 
+#define MAX_STATION_TRUST 10
+
 unsigned long clock_sync_time=millis();
-int clock_reference_time=-1;
-int clock_alarm_time[4]={0,0,0,0};
+MinutesOfDay_t clock_reference_time=TIME_UNKNOWN;
+int clock_rds_trust=0;
+
+unsigned long candidate_sync_time=millis();
+MinutesOfDay_t candidate_reference_time=TIME_UNKNOWN;
+int candidate_rds_trust=0;
+
+int station_trust=MAX_STATION_TRUST;
+
+MinutesOfDay_t clock_alarm_time[4]={0,0,0,0};
 byte clock_focussed_alarmIndex=0; 
-int clock_sleep_stop_time=TRIGGER_IS_OFF;
-int clock_alarm_stop_time=TRIGGER_IS_OFF;
-int clock_snooze_stop_time=TRIGGER_IS_OFF;
+MinutesOfDay_t clock_sleep_stop_time=TRIGGER_IS_OFF;
+MinutesOfDay_t clock_alarm_stop_time=TRIGGER_IS_OFF;
+MinutesOfDay_t clock_snooze_stop_time=TRIGGER_IS_OFF;
 byte clock_alarm_stopprocedure_progress=0;
 unsigned long clock_last_wakeup_stop_millis=0;  
-byte clock_rds_trust=0;
+
 
 
 
@@ -153,7 +163,7 @@ void loop() {
   /* --- no output code here ------*/
 
   #ifdef TRACE_CLOCK
-  static int last_traced_time;
+  static MinutesOfDay_t last_traced_time;
   if( last_traced_time!=clock_getCurrentTime()) {
     last_traced_time=clock_getCurrentTime();
     Serial.print(F("Cur :"));
@@ -174,7 +184,9 @@ void loop() {
  * ************************************************************
  */
 
-int clock_getCurrentTime() {
+/*  ------------  Information ----------------- */
+
+MinutesOfDay_t clock_getCurrentTime() {
   if(clock_rds_trust <RDS_TRUST_ACCEPTABLE) return TIME_UNKNOWN;
   return (((millis()-clock_sync_time)/60000)+clock_reference_time)%MINUTES_PER_DAY;
 }
@@ -183,7 +195,7 @@ unsigned long clock_getSyncTime(){
   return clock_sync_time; 
 }
 
-int clock_getAgeOfReference(){
+MinutesOfDay_t clock_getAgeOfReference(){
   if (clock_sync_time==0) {  /* Seems we dont have any data */
     if(millis()<REFERENCE_AGE_FOR_NOTIFY) return REFERENCE_AGE_FOR_CHECK; /* Warn gracefully */
     return millis();  /* We get worried */
@@ -191,84 +203,101 @@ int clock_getAgeOfReference(){
   return (millis()-clock_sync_time)/MILLIES_PER_MINUTE;
 }
 
-void clock_setReferenceTime(int measured_time) {
-static unsigned long last_measure_time=0;
-static byte badTryCount=0;
 
-  if(measured_time>MINUTES_PER_DAY) return; /* this is definietly rubbish */
+/* ############  Operation  ############## */
 
-  if( millis()-last_measure_time > RDS_MAX_WAIT_TIME) { /* if we waited very long we switch channel */
+/* -------------- evaluateNewRDSTime ----------------------         
+ * Evaluates the new given time 
+ */
+
+void clock_evaluateRDSTime(MinutesOfDay_t measured_time) {
+static unsigned long evaluation_time;
+
+
+  if( millis()-evaluation_time < RDS_SCAN_COOLDOWN_TIME     /* Dont accept values too fast  */
+   || radio_getRdsTimeAge() >= RDS_SCAN_COOLDOWN_TIME  ) return;       /* Only accept fresh values in relation to cooldown  */
+
+  evaluation_time=millis();
+
+  
+  /* change station, if we lost trust or it is not sending usable RDS timestamps */
+  if( millis()-candidate_sync_time > RDS_MAX_WAIT_TIME || station_trust<=0) { 
      #ifdef TRACE_CLOCK
         Serial.println(F("RDS Timeout"));
      #endif 
-     badTryCount=0;
      radio_switchRdsStation();  
-     last_measure_time=millis();   
+     station_trust=MAX_STATION_TRUST;
+     candidate_sync_time=evaluation_time;   
   }
   #ifdef TRACE_CLOCK
         static byte prev_second=0;
-        byte cursecond=(millis()-last_measure_time)/10000;
+        byte cursecond=(millis()-candidate_sync_time)/10000;
         if(cursecond!=prev_second) {
           prev_second=cursecond;
           Serial.print(F("No RDS Time since:"));
           Serial.println(cursecond*10);
         }
   #endif
-  
-  if( millis()-last_measure_time < RDS_SCAN_COOLDOWN_TIME     /* Dont accept values too fast  */
-   || radio_getRdsTimeAge() >= RDS_SCAN_COOLDOWN_TIME  ) return;       /* Only accept fresh values in relation to cooldown  */
 
-  last_measure_time=millis();
-  
-  int previous_measure_now=(((last_measure_time-clock_sync_time)/60000)+clock_reference_time)%MINUTES_PER_DAY;
+  /* reject rubbish */
+  if(measured_time>MINUTES_PER_DAY) 
+  {
+    station_trust--;
+    return; 
+  }
+
+   /* compare to progress calculation */
+  int candidate_progress_time=(((evaluation_time-candidate_sync_time+RDS_DERIVATION_TOLERANCE)/60000)+candidate_reference_time)%MINUTES_PER_DAY;
   
    #ifdef TRACE_CLOCK
       Serial.print(F("RDS:"));
       trace_printTime(measured_time);
    #endif
      
-  if(abs(measured_time-previous_measure_now)<RDS_DERIVATION_TOLERANCE) { /* RDS delivered in expected range  */
-     if(clock_rds_trust<RDS_TRUST_GOOD) clock_rds_trust+=1;
-      clock_sync_time=last_measure_time;
-      clock_reference_time=measured_time; 
-      if(badTryCount>0) badTryCount--;   
+  if(measured_time==candidate_progress_time) { /* RDS delivered in expected range  */
+      if(candidate_rds_trust<RDS_TRUST_GOOD) candidate_rds_trust+=1;
+      candidate_sync_time=evaluation_time; 
+      candidate_reference_time=measured_time; 
+      if(station_trust<MAX_STATION_TRUST) station_trust++;   
       #ifdef TRACE_CLOCK
-       Serial.print(F("\taccept"));
+       Serial.print(F("\tgood"));
       #endif 
+
+      if(candidate_rds_trust>=clock_rds_trust) 
+      {
+        clock_sync_time=candidate_sync_time;
+        clock_reference_time=candidate_reference_time;
+        clock_rds_trust=candidate_rds_trust;
+        #ifdef TRACE_CLOCK
+          Serial.print(F("\tused by clock"));
+        #endif 
+      }
  
   } else {
 
-     if(clock_rds_trust>=RDS_TRUST_CANDIDATE) {
-      clock_rds_trust-=2; 
+     if(candidate_rds_trust>=RDS_TRUST_CANDIDATE) {
+      candidate_rds_trust-=2; 
       #ifdef TRACE_CLOCK
        Serial.print(F("\treject"));
-      #endif   
-       
+      #endif         
      } else  { /* Only, when our trust has gone , we try the new RDS value */
-      badTryCount++;
-      clock_sync_time=last_measure_time;
-      clock_reference_time=measured_time;        
-      clock_rds_trust=0;
-      /* TBD switch station after x attemps */
+      station_trust--;
+      candidate_sync_time=evaluation_time; 
+      candidate_reference_time=measured_time;      
+      candidate_rds_trust=0;
       #ifdef TRACE_CLOCK
-       Serial.print(("\tswitch"));
+       Serial.print(("\texchange"));
       #endif    
      }
   }
-
-  if(badTryCount>BAD_TRY_UNTIL_CHANNEL_CHANGE) {
-    #ifdef TRACE_CLOCK
-       Serial.println(F("RDS bad count limit reached > channelchange"));
-    #endif 
-    badTryCount=0;
-    radio_switchRdsStation();
-  }
   
-  #ifdef TRACE_CLOCK
-    Serial.print(F(" trust:"));
+ #ifdef TRACE_CLOCK
+    Serial.print(F("\tcandidate trust:"));
+    Serial.print(candidate_rds_trust);
+    Serial.print(F("\tclock trust:"));
     Serial.print(clock_rds_trust);
-    Serial.print(F("\tBadTry:"));
-    Serial.println(badTryCount);
+    Serial.print(F("\tstation trust:"));
+    Serial.println(station_trust);
   #endif
 
 }
@@ -310,7 +339,7 @@ void process_STATE_IDLE(){
   if(clock_getAgeOfReference()>REFERENCE_AGE_FOR_CHECK ||
      clock_rds_trust<RDS_TRUST_GOOD) {
      radio_setRdsScanActive(true);
-     clock_setReferenceTime(radio_getLastRdsTimeInfo());
+     clock_evaluateRDSTime(radio_getLastRdsTimeInfo());
   }  else radio_setRdsScanActive(false);       
 
   output_renderIdleClockScene(clock_getCurrentTime()

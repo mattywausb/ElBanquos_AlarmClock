@@ -154,7 +154,7 @@ int radio_getLastRdsTimeInfo() {
   };
 
 
-unsigned int radio_getRdsTimeAge() {  /* Returns Age of the rds information in seconds (600000= 10 min = infinity) */
+unsigned long radio_getRdsTimeAge() {  /* Returns Age of the rds information in seconds (600000= 10 min = infinity) */
   #ifdef DEBUG_RDS_MOCKUP
   return true;
   #endif

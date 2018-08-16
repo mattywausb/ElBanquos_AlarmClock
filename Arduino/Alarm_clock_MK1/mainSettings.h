@@ -1,5 +1,7 @@
 #define TRACE_ON 1
 
+typedef  int MinutesOfDay_t;
+
 /* Parameters for Display preferences */
 #define MINUTE_FULL_CIRCLE_THRESHOLD 4  // Minute until we will show full circle
 #define MINUTE_SHIFT_THRESHOLD 45        // Minute that will shift hour gap by 1 pixel
