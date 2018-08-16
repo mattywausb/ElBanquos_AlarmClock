@@ -159,7 +159,9 @@ void output_renderClockScene(int minute_of_the_day,byte alarmIndicator) {
   if(alarmIndicator&ALARM_IDC_SHOW_MASK) {
     output_renderMinuteHighresBitmaps(minute_of_the_hour,true) ;                  
   } else { /* create our simple minute display format */
-    simple_pattern=0x0db6;                                /* _24_ */                                                       /* 8  1 */                                                       /* 4  2 */
+    simple_pattern=0x0db6;                                /* _24_ */
+                                                          /* 8  1 */ 
+                                                          /* 4  2 */
                                                           /* _18_ */
     if(minute_of_the_hour >MINUTE_FULL_CIRCLE_THRESHOLD) simple_pattern>>=(4-(minute_of_the_hour)/15)*3;
 
