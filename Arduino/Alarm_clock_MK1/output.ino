@@ -43,33 +43,14 @@ LedControl led8x8=LedControl(LED8X8_DATAIN_PIN,LED8X8_CLK_PIN,LED8X8_LOAD_PIN,LE
  *            Idle Clock Scene
  * ********************************************************************+
  */
-void output_renderIdleClockScene(int minute_of_the_day,byte alarmIndicator,byte rds_trust_base16){
 
-  if(minute_of_the_day<0) {   /* We have no time yet */
-
-    /* render "unkown" screen with trust progress bar */
-    byte rowPattern=0;  
-    if(rds_trust_base16>15)rds_trust_base16=15;
-
-    for(byte row=0;row<8;row++) {
-     
-      switch(row) {
-        case 0:
-        case 7: rowPattern=B11000011;break;
-        case 1:
-        case 6: rowPattern=B10000001;break;
-        default:  rowPattern=0; break;
-      }      
-      if((7-row)*2<rds_trust_base16) rowPattern|=B0001000;
-      if((row)*2<rds_trust_base16+1) rowPattern|=B00010000;
-      led8x8.setColumn(LED8X8_PANEL_0,7-row,rowPattern); /* using column to turn picture-90 degree */
-    }
-    return;
-  }
-  
-  output_renderClockScene(minute_of_the_day, alarmIndicator);
-  
+void output_renderTimeTrustScene(){
+    output_renderRampupMeasures((radio_getSignalStrength()<<3)/75  // radio signal has a range from 0 to 75,
+                                ,clock_getCandidateRDSScore()>>5   // RDS Score has a range from 0 to 255
+                                ,clock_getClockRDSScore()>>5);
+    
 }
+
 
 /* ################   Scenes   #########################################
  * #####################################################################          
@@ -441,26 +422,6 @@ void output_renderMinuteHighresBitmaps(int minutes,bool zeroIs60)
     #endif
 }
 
-void output_renderTimeTrustScreen(byte rds_trust_base16)
-{
-  byte rowPattern=0;  
-  if(rds_trust_base16>15)rds_trust_base16=15;
-
-  for(byte row=0;row<8;row++) {
-   
-    switch(row) {
-      case 0:
-      case 7: rowPattern=B11000011;break;
-      case 1:
-      case 6: rowPattern=B10000001;break;
-      default:  rowPattern=0; break;
-    }      
-    if((7-row)*2<rds_trust_base16) rowPattern|=B0001000;
-    if((row)*2<rds_trust_base16+1) rowPattern|=B00010000;
-    led8x8.setColumn(LED8X8_PANEL_0,7-row,rowPattern); /* using column to turn picture-90 degree */
-  }
-}
-
 /* *********    Render ring3 progress *******************************+
  */
 
@@ -477,6 +438,29 @@ void output_renderTimeTrustScreen(byte rds_trust_base16)
     #endif
  }
 
+/* ***************** RampupMeasures   *************************************+ 
+*/
+
+void output_renderRampupMeasures(int leftMeasure,int midMeasure,byte rightMeasure)
+{
+   /* render "unkown" screen with trust progress bar */
+    byte rowPattern=0;  
+
+    for(byte row=0;row<8;row++) { // col 0 oben 
+     
+      switch(row) {
+        case 0:
+        case 7: rowPattern=B10000001;break;
+        default:  rowPattern=0; break;
+      }      
+      if((7-row)<leftMeasure) rowPattern|=      B01000000;
+      if((7-row)<rightMeasure) rowPattern|=     B00000010;
+      if((row)<midMeasure) rowPattern|=B00011000;
+      led8x8.setColumn(LED8X8_PANEL_0,7-row,rowPattern); /* using column to turn picture-90 degree */
+    }
+    return;
+}
+  
 
 /* ***************** Letter   *************************************+ 
 */
@@ -592,6 +576,21 @@ void output_renderUint32Time_TEST()
   }
 }
 
+void output_renderDemoRampupMeasures()
+{
+  for(int i=0;i<8;i++)
+  {
+    output_renderRampupMeasures(i,i,i);
+    delay(1000);
+  }
+  
+  for(int i=0;i<24;i++)
+  {
+    output_renderRampupMeasures(i,i/2,i/3);
+    delay(1000);
+  }
+}
+
 void output_setup() {
   /*
    The MAX72XX is in power-saving mode on startup,
@@ -604,6 +603,7 @@ void output_setup() {
   led8x8.clearDisplay(LED8X8_PANEL_0);
 
   //output_renderUint32Time_TEST();
+  //output_renderDemoRampupMeasures();
 
   output_sequence_acknowlegde();
   output_sequence_escape();

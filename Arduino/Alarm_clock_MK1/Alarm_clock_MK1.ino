@@ -74,8 +74,9 @@ unsigned long clock_last_wakeup_stop_millis=0;
 
 void setup() {
  #ifdef TRACE_ON 
- Serial.begin(9600);
- Serial.println(F("--------->Start<------------"));
+    char compile_signature[] = "--- START (Build: " __DATE__ " " __TIME__ ") ---";   
+    Serial.begin(9600);
+    Serial.println(compile_signature); 
  #endif
  
   radio_setup();
@@ -203,6 +204,16 @@ MinutesOfDay_t clock_getAgeOfReference(){
   return (millis()-clock_sync_time)/MILLIES_PER_MINUTE;
 }
 
+int clock_getClockRDSScore()
+{
+  return max((clock_rds_trust*256)/ RDS_TRUST_GOOD,0);
+}
+
+int clock_getCandidateRDSScore()
+{
+  return max((candidate_rds_trust*256)/RDS_TRUST_ACCEPTABLE,0);
+}
+
 
 /* ############  Operation  ############## */
 
@@ -303,6 +314,14 @@ static unsigned long evaluation_time;
 }
 
 
+/* ###########  Output helper ########## */
+
+void callIdleScene(int minute_of_the_day, byte alarmIndicator)
+{
+  if(minute_of_the_day!=TIME_UNKNOWN) output_renderClockScene(minute_of_the_day,alarmIndicator);
+  else output_renderTimeTrustScene();
+}
+
 void trace_printTime(int timeValue)
 {
     Serial.print(timeValue/60);
@@ -320,7 +339,7 @@ void trace_printTime(int timeValue)
 
 void enter_STATE_IDLE(){
      clock_state=STATE_IDLE;
-     output_renderIdleClockScene(clock_getCurrentTime(),input_masterSwitchIsSet()?ALARM_INDICATOR_ON:ALARM_INDICATOR_OFF,(clock_rds_trust*16)/RDS_TRUST_ACCEPTABLE);
+     callIdleScene(clock_getCurrentTime(),input_masterSwitchIsSet()?ALARM_INDICATOR_ON:ALARM_INDICATOR_OFF);
      #ifdef TRACE_CLOCK
      Serial.println(F("#IDLE"));
      #endif
@@ -342,9 +361,8 @@ void process_STATE_IDLE(){
      clock_evaluateRDSTime(radio_getLastRdsTimeInfo());
   }  else radio_setRdsScanActive(false);       
 
-  output_renderIdleClockScene(clock_getCurrentTime()
-                             ,input_masterSwitchIsSet()?ALARM_INDICATOR_ON:ALARM_INDICATOR_OFF
-                             ,(clock_rds_trust*16)/RDS_TRUST_ACCEPTABLE);  
+  callIdleScene(clock_getCurrentTime()
+                             ,input_masterSwitchIsSet()?ALARM_INDICATOR_ON:ALARM_INDICATOR_OFF);  
 }
 
 /* *************** STATE_WAKEUP ***************** */
@@ -359,10 +377,9 @@ void enter_STATE_WAKEUP(){
    #ifdef TRACE_CLOCK
      Serial.println(F("#WAKEUP"));
    #endif
-   output_renderIdleClockScene(clock_getCurrentTime()
+   callIdleScene(clock_getCurrentTime()
                                ,clock_snooze_stop_time==TRIGGER_IS_OFF?0:ALARM_INDICATOR_SNOOZE
-                               |(input_masterSwitchIsSet()?ALARM_INDICATOR_ON :ALARM_INDICATOR_OFF)
-                               ,(clock_rds_trust*16)/RDS_TRUST_ACCEPTABLE);
+                               |(input_masterSwitchIsSet()?ALARM_INDICATOR_ON :ALARM_INDICATOR_OFF));
 }
 
 void resume_STATE_WAKEUP(){
@@ -394,9 +411,8 @@ void process_STATE_WAKEUP(){
   if( clock_snooze_stop_time!=TRIGGER_IS_OFF) alarmIndicator|=ALARM_INDICATOR_SNOOZE;
   if(!input_masterSwitchIsSet()) alarmIndicator|=ALARM_INDICATOR_OFF;
 
-  output_renderIdleClockScene(clock_getCurrentTime()
-                             ,alarmIndicator
-                             ,(clock_rds_trust*16)/RDS_TRUST_ACCEPTABLE);
+  callIdleScene(clock_getCurrentTime()
+                             ,alarmIndicator);
 
 }
 
@@ -645,7 +661,7 @@ void process_STATE_DEBUG(){
                 }
                 break;   
         case 2:           /* time trust (complete) */
-                output_renderTimeTrustScreen((clock_rds_trust*16)/RDS_TRUST_GOOD);
+                output_renderTimeTrustScene();
                 break;     
         case 3:           /* signal strenght */
                 strength_int=radio_getSignalStrength();

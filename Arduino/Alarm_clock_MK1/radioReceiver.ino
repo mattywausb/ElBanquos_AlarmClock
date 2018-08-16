@@ -168,12 +168,12 @@ bool radio_isPlaying()  /* Radio is declared as play when playing or fading in *
   return (bitRead(radio_operation_flags,RADIO_FLAG_PLAY)& !bitRead(radio_operation_flags,RADIO_FLAG_FADE_OUT));
 }
 
-
+/* Get signal strengh in dBm */
 uint8_t radio_getSignalStrength()
 {
   RADIO_INFO radio_info;
   radio.getRadioInfo(&radio_info);
-  return radio_info.rssi;
+  return radio_info.rssi; // 75 dBm is maximum value from the radio
 }
 
 int radio_getFrequency()
