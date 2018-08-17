@@ -66,6 +66,12 @@ In der Mitte des Displays wird der Fortschritt innerhalb einer Stunde in 15 Minu
 * 25-40 Minuten: zusätzlich 2 Pixel unterhalbt der Mitte
 40-55 Minuten: zusätzlich 2 Pixel links der Mitte
 
+## Arbeitszustände des Weckers
+Über die ####
+
+### Weckzeit anzeigen
+Wenn sich das der Wecker im Ruhezustand befindet 
+1. Drehregler drehen
 
 ## Hintergründe für das Design
 ### Anzeige
