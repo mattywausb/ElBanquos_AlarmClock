@@ -51,11 +51,14 @@ versetzt, d.h. die volle Stunde wird 5 Minuten vor dem erreichen der vollen Stun
 Der gleiche Versatz für alle weiteren Abschnitte der Stunde. (Dieser Verstatz gilt nur für die Echtzeitanzeige. Die Einstellung der 
 Alarmzeit hat eine exakte Anzeige)
 ## Der Stundenrahmen
-Der Stundenrahmen wird am äußeren Rand des Displays angezeigt. Eine kleine Lücke aus 2 Pixeln zeigt die aktuelle Stunde an, und zwar auf den
-gleichen Positionen wie bei einer Zeigeruhr (12 Uhr oben mittig, 3 uhr rechts mittig usw). Ab 20 Minuten vor der Folgestunde rückt diese Lücke um ein Pixel vor. um die relative Nähe
-zur Kommenden Stunde anzuzeigen. Der Rahmen ist immer an der, der Stundenlücke gegenüber liegenden Seite, offen (große Lücke). Dadurch ist 
-eine sehr grobe Einschätzung der Zeit ohne erkennen der kleinen Lücke möglich. Gerade die allgemein "weckkrittischen" Stunden 5-7 Uhr sind 
-damit gut von den davor liegenden Stunden 11-4  unterscheidbar.
+Der Stundenrahmen wird am äußeren Rand des Displays angezeigt. Eine kleine Lücke aus 2 Pixeln zeigt die aktuelle Stunde an, analog wie bei einer Zeigeruhr (12 Uhr oben mittig, 3 uhr rechts mittig usw).
+
+Ab 20 Minuten vor der Folgestunde rückt diese Lücke um ein Pixel vor. um die relative Nähe
+zur Kommenden Stunde anzuzeigen. 
+
+Der Rahmen ist immer an der, der Stundenlücke gegenüber liegenden Seite, offen (große Lücke). Dadurch ist 
+eine sehr grobe Einschätzung der Zeit ohne erkennen der kleinen Lücke möglich. Gerade die allgemein "weckkrittischen" Stunden 5-7 Uhr sind damit gut von den davor liegenden Stunden 11-4  unterscheidbar.
+
 Solange der Alarm über den Schalter abgeschaltet ist, wird dies durch zwei Lücken in den "seitlichen" Rahmenkanten erkennbar gemacht.
 ## Viertelstundenkreis
 In der Mitte des Displays wird der Fortschritt innerhalb einer Stunde in 15 Minutenschritten angezeigt.
@@ -136,6 +139,7 @@ Um die Funktionstüchtigkeit des Weckers zu beurteilen können über die Trace F
      4. Empfangsstärke 
      5. 10er und 1 Ziffer der Frequenz des aktiven Senders
      6. Kommastelle der Frequenz des aktiven Senders
+     7. Anzeige der Systemlaufzeit in BCD (Zeile 8 Sekunden, Zeile 7 Minuten, Zeile 6 Stunden, Zeile 5 Tage). Die Systemlaufzeit beginnt nach ca. 50 Tagen von vorne bzw. nach jedem "Reboot".
 
 # Demo Funktion
 
