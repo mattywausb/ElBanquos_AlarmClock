@@ -27,6 +27,7 @@ enum CLOCK_STATE {
   STATE_ALARM_INFO,  // Show Alarm time
   STATE_ALARM_CHANGE,  // Change and set Alarm time
   STATE_SLEEP_SET,  // Activate Sleep and change sleep time
+  STATE_PRESET_SELECT, // Select playing station
   STATE_DEBUG,  // Show some explicit values for debugging
   STATE_DEMO  // show fast time progressing
 };
@@ -147,15 +148,15 @@ void loop() {
     
     case STATE_SLEEP_SET:       process_STATE_SLEEP_SET(); break;
 
+    case STATE_PRESET_SELECT:  process_STATE_PRESET_SELECT(); break;
+     
     case STATE_DEBUG:  process_STATE_DEBUG(); break;
     
     case STATE_DEMO:  process_STATE_DEMO(); break;
 
  /* ------------------------------------------------------------------ */  
   
-    default: output_renderClockScene(TIME_UNKNOWN,ALARM_INDICATOR_ON); 
-      output_matrix_displayUpdate() ;
-      delay(1000);
+    default: output_sequence_alert(); 
       enter_STATE_IDLE();
   }
 
@@ -548,7 +549,7 @@ void enter_STATE_SLEEP_SET(){
   int sleepMinutes=45;
   if(clock_sleep_stop_time!=TRIGGER_IS_OFF) sleepMinutes=clock_sleep_stop_time-clock_getCurrentTime();
   if(sleepMinutes<0) sleepMinutes+MINUTES_PER_DAY;
-  input_setEncoderRange(0, 70,5,sleepMinutes); // 65,70 for debug and demo
+  input_setEncoderRange(0, 75,5,sleepMinutes); // 65+ for Setting Screens
   output_renderSleepScene(input_getEncoderValue());
   radio_switchOn();
   #ifdef TRACE_CLOCK
@@ -605,22 +606,67 @@ void process_STATE_SLEEP_SET(){
       case 65:
             if(input_selectGotPressed()) 
             {
+              enter_STATE_PRESET_SELECT();
+              return;  
+            }
+            output_renderLetterScene(4); // P
+            break; 
+      case 70:
+            if(input_selectGotPressed()) 
+            {
               enter_STATE_DEMO();
               return;  
             }
+            output_renderLetterScene(0); // D
             break;  
-      case 70:
+      case 75:
             if(input_selectGotPressed()) 
             {
               enter_STATE_DEBUG();
               return;  
             }
-            break;               
+            output_renderLetterScene(1); // D
+            break;     
+      default:
+            output_sequence_alert();          
      }
-     output_renderLetterScene((input_getEncoderValue()-65)/5);
   }
 }
 
+
+/* *************** STATE_PRESET_SELECT ***************** */
+
+void enter_STATE_PRESET_SELECT(){
+  
+  clock_state=STATE_PRESET_SELECT; 
+  input_getEncoderValue(); // Read out Encoder to get of the last event 
+  input_setEncoderRange(0, RADIO_PRESET_COUNT-1,1,radio_getSelectedPreset()); 
+  
+  output_renderPresetSelectScene(input_getEncoderValue());
+  #ifdef TRACE_CLOCK
+         Serial.println(F("#PRESET_SELECT"));
+  #endif
+}
+
+void process_STATE_PRESET_SELECT(){
+    if(input_selectGotPressed()||input_getSecondsSinceLastEvent()> SECONDS_UNTIL_FALLBACK_LONG
+        ) {
+          /* TODO: Store in EEPROM */
+            enter_STATE_IDLE();
+            return;
+    }
+    if(input_snoozeGotPressed()) {
+        if(radio_isPlaying()) radio_switchOff();
+        else radio_switchOn();
+    }
+    
+    if(input_hasEncoderChangeEvent()) {
+      radio_setSelectedPreset(input_getEncoderValue()); 
+    }
+    
+   output_renderPresetSelectScene(input_getEncoderValue());
+  
+}
 /* *************** STATE_DEBUG ***************** */
 void enter_STATE_DEBUG(){
   clock_state=STATE_DEBUG; 
@@ -681,7 +727,7 @@ void process_STATE_DEBUG(){
                 break;
                 
         default: 
-             output_sequence_watchdog_alert();
+             output_sequence_alert();
              break;
        }
         
@@ -700,8 +746,6 @@ void process_STATE_DEMO(){
   static unsigned long demo_prev_frame_time=0;
   
           if(input_snoozeGotPressed()||input_selectGotPressed() || input_getSecondsSinceLastEvent()>180) {
-            output_sequence_watchdog_alert();
-            delay(4000);
             output_sequence_escape();
             enter_STATE_IDLE();
             return;  

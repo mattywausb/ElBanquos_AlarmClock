@@ -31,13 +31,14 @@
 #define RDS_UPTODATE_THRESHOLD 50000  // Milliseconds we declare our information as actual
 
 /* the following presets should provde rds time data in my time zone */
-int stationPreset[]={ 10260   // RBB FRITZ in Berlin
+int stationPreset[RADIO_PRESET_COUNT]={ 
+                      10260   // RBB FRITZ in Berlin
                       ,9580   // RBB Radio 1 in Berlin
                       ,9230   // RBB Info Radio Berlin
                       ,8880   // RBB 88,8 Berlin
                     } ;
 
-byte currentPlayStation=0;
+byte currentPlayStation=1;
 byte currentRdsStation=1;
 
 // --- State memory and objects
@@ -143,6 +144,16 @@ void radio_switchOff(){
   radio_activateRdsStation();
 }
 
+void radio_setSelectedPreset(byte newPlayStation)
+{
+  currentPlayStation=newPlayStation;
+  if(radio_isPlaying()) 
+  {
+    radio.setBandFrequency(FIX_BAND, stationPreset[currentPlayStation]);  
+    radio.clearRDS();  
+  }
+
+}
 
 /* -----------  Information ------------- */
 
@@ -181,6 +192,11 @@ int radio_getFrequency()
 {
   if(radio_isPlaying()) return stationPreset[currentPlayStation];
   return stationPreset[currentRdsStation];
+}
+
+byte radio_getSelectedPreset()
+{
+  return currentPlayStation;
 }
 
 

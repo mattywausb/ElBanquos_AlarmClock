@@ -204,9 +204,29 @@ void output_renderSleepScene(int minutes) {
 }
 
 
+
+/* ***************** render Letter Scene  *************************************+ 
+*/
+
 void output_renderLetterScene(byte letter_index) 
 {
-  output_render_letter(letter_index,0) ;
+  output_render_letter(letter_index,2) ;
+}
+
+/* ***************** Preset select Procedure Scene  *************************************+ 
+*/
+
+void output_renderPresetSelectScene(byte preset_index) 
+{
+  byte columnBitmap[3];
+   
+  output_render_letter(4,0); // P
+
+  getDigitColumnPattern(columnBitmap,preset_index+1);
+  for(int i=0;i<3;i++)
+  {
+      led8x8.setRow(LED8X8_PANEL_0,7-i,mirroredPattern((columnBitmap[2-i])));
+  }
 }
 
 
@@ -221,7 +241,11 @@ void output_renderDebugDigitScene(int value,byte debug_screen_number)
 
 void output_renderDebugLetterScene(int letter_index, byte debug_screen_number)
 {
-  output_render_letter(letter_index,0xff>>(8-debug_screen_number));
+  output_render_letter(letter_index,1);
+  led8x8.setRow(LED8X8_PANEL_0,7,0);
+  led8x8.setRow(LED8X8_PANEL_0,0,0);
+  led8x8.setRow(LED8X8_PANEL_0,1,0);
+  led8x8.setColumn(LED8X8_PANEL_0,7,0xff<<(8-debug_screen_number));
 }
 
 void output_renderUint32Time(uint32_t value,byte debug_screen_number)
@@ -309,7 +333,7 @@ void output_sequence_snooze(){
    * 1   x           x x
    * 0   x x x x x x x x 
    */
-void output_sequence_watchdog_alert()
+void output_sequence_alert()
 {
    const byte colPattern[]={0xff,0x81,0xa5,0xa5,0xa5,0xbd,0xff}; /* twisted */
    led8x8.clearDisplay(LED8X8_PANEL_0); 
@@ -467,33 +491,41 @@ void output_renderRampupMeasures(int leftMeasure,int midMeasure,byte rightMeasur
 /* ***************** Letter   *************************************+ 
 */
 
-/*     8 4 2 1 8 4 2 1        8 4 2 1 8 4 2 1      8 4 2 1 8 4 2 1                                                     
- * 8                       8                    8                                    
- * 4     x x x x x         4      X X X         4                                       
- * 2         x             2      X     X       2                                         
- * 1         x             1      X     X       1    X X   X X                               
- * 8         x             8      X     X       8                                        
- * 4         x             4      X     X       4                                        
- * 2         x             2      X X X         2                                      
+/*     8 4 2 1 8 4 2 1         8 4 2 1 8 4 2 1        8 4 2 1 8 4 2 1                                                     
+ * 8                       8                       8                                    
+ * 4   x x x x x           4   X X X               4                                       
+ * 2       x               2   X     X             2                                         
+ * 1       x               1   X     X             1  X X   X X                               
+ * 8       x               8   X     X             8                                        
+ * 4       x               4   X     X             4                                        
+ * 2       x               2   X X X               2                                      
  * 1                       1                    1                                     
  *        Trace                   Demo                  
  */ 
-void output_render_letter(byte letter_index, byte top_row_pattern) 
+
+ /*     8 4 2 1 8 4 2 1        8 4 2 1 8 4 2 1        8 4 2 1 8 4 2 1                                                     
+ * 8                       8                       8                                    
+ * 4      X X X            4   X X X               4                                       
+ * 2    X                  2   X     X             2                                         
+ * 1      X X              1   X     X             1                                            
+ * 8          X            8   X X X               8                                        
+ * 4          X            4   X                   4                                        
+ * 2    X X X              2   X                   2                                      
+ * 1                       1                       1                                     
+ *        Station                                       
+ */ 
+void output_render_letter(byte letter_index,  byte first_column) 
 {
    const byte colPattern[][5]={      /* twisted 90 degree to left */
-    /* 0 = D */ {0x00,0x7e,0x42,0x42,0x3c},
+    /* 0 = D */ {0x7e,0x42,0x42,0x3c,0x00},
     /* 1 = T */ {0x40,0x40,0x7e,0x40,0x40},
-    /* 2 = --*/ {0x10,0x10,0x00,0x10,0x10}
+    /* 2 = --*/ {0x10,0x10,0x00,0x10,0x10},
+    /* 3 = S */ {0x22,0x52,0x52,0x4c,0x00},
+    /* 4 = P */ {0x7e,0x48,0x48,0x30,0x00}
    };
 
-
-
-   led8x8.setRow(LED8X8_PANEL_0,0,bitRead(top_row_pattern,0));  // Empty space on the sides  
-   led8x8.setRow(LED8X8_PANEL_0,7,bitRead(top_row_pattern,7));  // Empty space on the sides
-   led8x8.setRow(LED8X8_PANEL_0,6,bitRead(top_row_pattern,6));  // Empty space on the sides
    for(byte i=0;i<5;i++){
-       led8x8.setRow(LED8X8_PANEL_0,i+1,(mirroredPattern(colPattern[letter_index][i]>>1)
-                                         |(bitRead(top_row_pattern,i+1)) ));     /* using row to turn picture-90 degree */
+       led8x8.setRow(LED8X8_PANEL_0,i+first_column,(mirroredPattern(colPattern[letter_index][i]>>1)));     /* using row to turn picture-90 degree */
    }
 }
 
@@ -511,10 +543,29 @@ void output_render_letter(byte letter_index, byte top_row_pattern)
  *                                                                                     
  */ 
 /* Displays a 2 digit number */
-void output_render_number(byte theNumber,byte top_row_pattern) 
+
+byte getDigitColumnPattern(byte *columnBitmap,byte digitValue) 
 {
                         // 0    1    2    3    4    5    6    7    8    9    <spc>
   byte digitBitmap[11]={0xbb,0x0a,0x3d,0x1f,0x8e,0x97,0xb7,0x1a,0xbf,0x9f};
+
+      columnBitmap[0]=(digitBitmap[digitValue]>>4 &    B00001010) // main bits
+                    | ( digitBitmap[digitValue]>>3 & B00010100) // fill up left
+                    | ( digitBitmap[digitValue]>>5 & B00000101) // fill up right
+                    | ( digitBitmap[digitValue] &    B00010101); // fill up from middle
+  
+    columnBitmap[1]=(digitBitmap[digitValue] & B00010101); // main bits
+  
+    columnBitmap[2]=(digitBitmap[digitValue] &       B00001010) // main bits
+                    | ( digitBitmap[digitValue]<<1 & B00010100) // fill up left
+                    | ( digitBitmap[digitValue]>>1 & B00000101) // fill up right
+                    | ( digitBitmap[digitValue] &    B00010101); // fill up from middle
+
+}
+
+
+void output_render_number(byte theNumber,byte top_row_pattern) 
+{
   byte columnBitmap[3];
   byte currentDigit;
   byte finalPattern;
@@ -524,8 +575,8 @@ void output_render_number(byte theNumber,byte top_row_pattern)
   Serial.print(F("top_row_pattern:"));Serial.println(top_row_pattern);
   #endif
   
-  led8x8.setRow(LED8X8_PANEL_0,3,(bitRead(top_row_pattern,3)));  // Empty space between  digits
-  led8x8.setRow(LED8X8_PANEL_0,7,(bitRead(top_row_pattern,7)));  // Empty space between left of the digits
+  led8x8.setRow(LED8X8_PANEL_0,4,(bitRead(top_row_pattern,4)));  // Empty space between  digits
+  led8x8.setRow(LED8X8_PANEL_0,0,(bitRead(top_row_pattern,0)));  // Empty space between left of the digits
   for(int digit_index=0;digit_index<2;digit_index++)
   {
     
@@ -534,25 +585,15 @@ void output_render_number(byte theNumber,byte top_row_pattern)
       Serial.print(F("digit"));Serial.println(currentDigit);
       Serial.print(F("digitBitmap"));Serial.println(digitBitmap[currentDigit],BIN);
     #endif
-
-    columnBitmap[0]=(digitBitmap[currentDigit]>>4 &    B00001010) // main bits
-                    | ( digitBitmap[currentDigit]>>3 & B00010100) // fill up left
-                    | ( digitBitmap[currentDigit]>>5 & B00000101) // fill up right
-                    | ( digitBitmap[currentDigit] &    B00010101); // fill up from middle
-  
-    columnBitmap[1]=(digitBitmap[currentDigit] & B00010101); // main bits
-  
-    columnBitmap[2]=(digitBitmap[currentDigit] &       B00001010) // main bits
-                    | ( digitBitmap[currentDigit]<<1 & B00010100) // fill up left
-                    | ( digitBitmap[currentDigit]>>1 & B00000101) // fill up right
-                    | ( digitBitmap[currentDigit] &    B00010101); // fill up from middle
+   
+    getDigitColumnPattern(columnBitmap,currentDigit);
 
     for(int i=0;i<3;i++)
     {
       if(digit_index==0 || currentDigit>0) 
-            finalPattern=mirroredPattern((columnBitmap[2-i]))| bitRead(top_row_pattern,6-i-digit_index*4);
-      else  finalPattern=bitRead(top_row_pattern,6-i-digit_index*4); 
-      led8x8.setRow(LED8X8_PANEL_0,6-i-digit_index*4,finalPattern);
+            finalPattern=mirroredPattern((columnBitmap[2-i]))| bitRead(top_row_pattern,7-i-digit_index*4);
+      else  finalPattern=bitRead(top_row_pattern,7-i-digit_index*4); 
+      led8x8.setRow(LED8X8_PANEL_0,7-i-digit_index*4,finalPattern);
       #ifdef TRACE_OUTPUT_NUMBER 
          Serial.print(F("Col:"));Serial.println(finalPattern,BIN);
       #endif

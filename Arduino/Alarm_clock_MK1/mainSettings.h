@@ -17,6 +17,8 @@ typedef  int MinutesOfDay_t;
 #define SECONDS_UNTIL_FALLBACK_SHORT 5   // Number of seconds the clock will wait before falling back 
 
 
+#define RADIO_PRESET_COUNT 4
+
 /// The SI4703 board has to be connected by using the following connections:
 /// | Arduino UNO pin    | Radio chip signal  | 
 /// | -------------------| -------------------| 
