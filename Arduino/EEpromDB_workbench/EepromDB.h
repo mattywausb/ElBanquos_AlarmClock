@@ -14,7 +14,7 @@ class EepromDB {
      /* Initialize the DB object, check the storage 
       *  Returns true when DB was initialized successfully
       */
-     bool setupDB(int startAdress, int recordsize, int recordCount);
+     bool setupDB(int startAdress, int recordsize, int generationCount);
 
      /* get the current record from the buffer
       *  Parameter: Poiter to the buffer, to write the data to
@@ -30,7 +30,7 @@ class EepromDB {
      bool updateRecord(byte *buffer);
 
      /* provide first Adress, not occupoed by DB */
-     int getAdressBehindDB() {return db_startAdress+(db_recordSize+1)*db_recordCount;}
+     int getAdressBehindDB() {return db_startAdress+(db_recordSize+1)*db_generationCount;}
 
      /* Dump the whole DB Storage to the Serial Interface */
      void dumpToSerial(void);
@@ -41,7 +41,7 @@ class EepromDB {
      
      int db_startAdress=-1;
      int db_recordSize=0;
-     int db_recordCount=0;
+     int db_generationCount=0;
      byte db_currentTransactionIndex=255;
      byte db_currentRowIndex=0;
 };
