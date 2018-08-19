@@ -118,9 +118,9 @@ Der Wecker alarmiert nach Ablauf der eingestellten Zeit.
 ## Einschlaffunktion / Radio an
 Über die Schlaffunktion kann das Radio spontan für eine definierte Zeit eingeschaltet werden.
 1. Schlummer Taste drücken ->-> Auf dem Display erscheint ein  "Minutenquadrat", voreingestellt auf 20 Minuten für ein Nickerchen
-2. Mit dem Drehregler kann die Dauer veringern und über den Nullpunkt drehen-> das Radio schalte sich ein.
+2. Mit dem Drehregler die Dauer verringern und über den Nullpunkt drehen-> das Radio schaltet sich ein.
 3. Durch Weiterdrehen kann die Einschaltdauer in 5 Minutenschritten geändert werden 
-4. Mit drücken auf den Drehregler die gewählte Dauer bestätigen -> Das Radio wird sich nach Ablaufen der Dauer abschalten
+4. Mit Drücken auf den Drehregler die gewählte Dauer bestätigen -> Das Radio wird sich nach Ablaufen der Dauer abschalten
 Alternativ: Wird nach der Anpassung der Zeit keine weitere Bedienung vorgenommen, wird die angezeigte Zeit als Laufzeit übernommen
 
 ## Schlaffunktion / Radio abschalten
@@ -140,16 +140,16 @@ Die Uhr übernimmt die aktuelle  RDS Uhrzeit nur dann, wenn sie das gleiche oder
 # Verhalten bei einem Neustart
 Ein Neustart der Uhr erfolgt
 * Nach einem Stromausfall
-* bei internen reboot aufgrund eines nicht behebaren Fehlers
-Um zu verhindern, dass ein Alarm durch den Stromausfall verpasst wird der Alarm unter folgenden Bedingungen aktiviert
+* bei internen Reboot aufgrund eines nicht behebbaren Fehlers
+Um zu verhindern, dass eine Weckzeit durch einen Reboot/Stromausfall verpasst wird, schaltet sich der der Alarm unter folgenden Bedingungen unverzüglich ein
 * (noch zu implementieren) Der Schlummermodus war aktiv
 * Eine "Nickerchenzeit" war gesetzt
-* Sowie die Zeit wieder korrekt festgestellt wurde und die eingestellte Alarmzeit weniger als 60 Minuten her ist 
+* Sowie die Zeit über RDS als korrekt bewertet wurde und die eingestellte Weckzeit weniger als 60 Minuten her ist 
 
 # Sender Preset auswählen
 Das Radio hat 4 Senderpresets, die auch bei der Suche der RDS Zeit durchsucht werden. Das Preset, das zum Wecken benutzt wird, kann wie folgt ausgewählt werde,
 1. Schlummer Taste drücken -> Auf dem Display erscheint das  "Minutenquadrat, mit der Restzeit der Schlaffunktion oder Nickerchenfunktion"
-2. Mit dem Drehregler die Zeit über den größen Wert hinaus drehen bis ein "P" auf dem Display erscheint.
+2. Mit dem Drehregler die Zeit über den größten Wert hinaus drehen bis ein "P" auf dem Display erscheint.
 3. Drehregler drücken-> Presetauswahlmodus wird gestartet
 4. Mit dem Drehregler das gewünschte Preset auswählen
 Zusatz: Mit der Snooze Taste kann das Radio in diesem Modus ein und ausgeschaltet werden.
