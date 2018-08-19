@@ -118,7 +118,7 @@ void loop() {
 
   /* Sleep Timer logic */
   if(clock_getCurrentTime()==clock_sleep_stop_time) {
-    radio_switchOff();
+    radio_fadeOut();
     clock_sleep_stop_time=TRIGGER_IS_OFF;
     #ifdef TRACE_CLOCK
          Serial.println(F("SLEEP timed out"));
@@ -417,7 +417,7 @@ void enter_STATE_WAKEUP(){
 void resume_STATE_WAKEUP(){
    clock_state=STATE_WAKEUP;
    clock_snooze_stop_time=TRIGGER_IS_OFF;
-   radio_switchOn();
+   radio_fadeIn();
    #ifdef TRACE_CLOCK
      Serial.println(F(">WAKEUP"));
    #endif
@@ -549,12 +549,13 @@ void enter_STATE_ALARM_CHANGE(){
 
 void process_STATE_ALARM_CHANGE(){
       if(input_snoozeGotPressed() 
-             || input_getSecondsSinceLastEvent()> SECONDS_UNTIL_FALLBACK_LONG) {
+             ) {
              output_sequence_escape();
              enter_STATE_IDLE();return;
           }
 
-      if(input_selectGotPressed()) {
+      if(input_selectGotPressed()
+      || input_getSecondsSinceLastEvent()> SECONDS_UNTIL_FALLBACK_LONG) {
         output_sequence_acknowlegde();
         clock_alarm_time[clock_focussed_alarmIndex]=input_getEncoderValue();
         storeSettings() ;

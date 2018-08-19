@@ -26,7 +26,7 @@
 #define FIX_BAND     RADIO_BAND_FM   ///< The band that will be tuned by this sketch is FM.
 
 #define FINAL_VOLUME   15               ///< The volume that will finally be set by this sketch is level 8.
-#define FADE_STEP_INTERVAL  3500      // milliseconds to wait until next fade step
+#define FADE_STEP_INTERVAL  1500      // milliseconds to wait until next fade step
 #define RDS_SCAN_VOLUME 0          // Volume to use when scann (for debug reasons can be set >0)
 #define RDS_UPTODATE_THRESHOLD 50000  // Milliseconds we declare our information as actual
 
@@ -299,6 +299,16 @@ void radio_loop_tick()
     radio_lastFadeFrameTime=millis();
     if(radio.getVolume()<FINAL_VOLUME) radio.setVolume(radio.getVolume()+1);
     else bitClear(radio_operation_flags,RADIO_FLAG_FADE_IN);
+  }
+
+  /* fade out procedure */
+  if(bitRead(radio_operation_flags,RADIO_FLAG_FADE_OUT) && millis()-radio_lastFadeFrameTime>FADE_STEP_INTERVAL) {
+    radio_lastFadeFrameTime=millis();
+    if(radio.getVolume()>0) radio.setVolume(radio.getVolume()-1);
+    else {
+      bitClear(radio_operation_flags,RADIO_FLAG_FADE_OUT);
+      radio_switchOff();
+    }
   }
   
   #ifdef TRACE_RADIO

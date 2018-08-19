@@ -8,7 +8,8 @@ typedef  int MinutesOfDay_t;
 #define PRESENTATION_SHIFT_MINUTES  5 // Minutes, the whole presentation of the current time will be shiftet (+5 means, time will appear 5 Minutes early)
 
 #define ALARM_DURATION  60  // Number of Minutes the Radio will play after last alarm trigger
-#define SNOOZE_DURATION 10   // Number of Minutes for the snooze time
+//#define SNOOZE_DURATION 10   // Number of Minutes for the snooze time
+#define SNOOZE_DURATION 1   // #### DEBUG SETTING ####
 
 #define DEFAULT_ALARM_TIME 6*60+30
 //#define DEFAULT_ALARM_TIME 16*60+30    // Debug Wake time

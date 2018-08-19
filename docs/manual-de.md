@@ -88,7 +88,7 @@ Alternativ springt die Anzeige auch nach einer kurzen Wartezeit selbständig zur
 Wenn sich der Wecker im Ruhezustand befinden (Anzeige der Uhrzeit, kein laufender Alarm) kann die Weckzeit wie folgt eingestellt werden:
 1. Drehregler drücken -> Die Weckzeit wird angezeigt, wobei die offene Kante des Stundenrahmens blinkt
 2. Drehregler vor oder zurückdrehen bis die gewünschte Weckzeit angezeigt wird (siehe gleich, lesen der Zeitanzeige)
-3. Drehregler drücken um die gewählte Zeit als Weckzeit festzulegen->-  Auf dem Display erscheint kurz ein "Bestätigungssymbol" 
+3. Drehregler drücken oder 10 Sekunden keine Bedienung vornehmen um die gewählte Zeit als Weckzeit festzulegen->-  Auf dem Display erscheint kurz ein "Bestätigungssymbol" 
 und danach die Zeitanzeige bzw. die Zeitsuchanzeige
 
 Alternativ kann mit dem "Snooze" Taster die Änderung der Weckzeit abgebrochen werden
@@ -166,3 +166,10 @@ zu Ableseproblemen führt. Daraus ergab sich am Ende der Ansatz mit dem Rahmen.
 ## Bedienungsabfolge
 Die Bedienabfolge ist so gestaltet, dass die Bedienung beim zu Bett gehen(auch für ein Nickerchen) so wenig Geräusche wie möglich verursacht um "akustische Trigger", die den Körper wieder aufwecken, zu vermeiden.
 Akustische Trigger sind: Drücken des Drehreglers, aktivierung des Radios. 
+
+* Bedienungen ohne Geräusche: Alarmzeit anschauen, Nickerchenzeit setzen, Alarm pausieren, Alarm beenden
+, Sender prüfen/ändern
+* Bedienung mit 1 Klick: Alarmzeit ändern,Radiosender wählen
+
+
+
