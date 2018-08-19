@@ -624,6 +624,8 @@ void process_STATE_INTERVAL_SET(){
          Serial.println(F("INTERVAL_SET cancel by snooze"));
     #endif
     radio_switchOff(); /* TBD: only if we are still in a wakeup interval */
+    clock_sleep_stop_time=TRIGGER_IS_OFF;
+    if(input_getEncoderValue()<0 ) clock_nap_alarm_time=TRIGGER_IS_OFF;
     output_sequence_escape();
     enter_STATE_IDLE();
     return;
@@ -643,6 +645,7 @@ void process_STATE_INTERVAL_SET(){
           #ifdef TRACE_CLOCK
              Serial.println(F("INTERVAL_SET cancel by 0"));
           #endif
+           output_sequence_acknowlegde();
            radio_switchOff(); 
            clock_sleep_stop_time=TRIGGER_IS_OFF;
            clock_nap_alarm_time=TRIGGER_IS_OFF;
@@ -653,6 +656,7 @@ void process_STATE_INTERVAL_SET(){
         if(input_getEncoderValue()>0)
         {  /* This is a nap setting */
           clock_nap_alarm_time=(input_getEncoderValue()+clock_getCurrentTime()) % MINUTES_PER_DAY;
+          clock_sleep_stop_time=TRIGGER_IS_OFF;
           output_sequence_acknowlegde();
           storeSettings() ;
           #ifdef TRACE_CLOCK
@@ -664,6 +668,7 @@ void process_STATE_INTERVAL_SET(){
           return;             
         } else { /* This is a sleep setting */
           clock_sleep_stop_time=(-input_getEncoderValue()+clock_getCurrentTime()) % MINUTES_PER_DAY;
+          clock_nap_alarm_time=TRIGGER_IS_OFF;
           output_sequence_acknowlegde();
           #ifdef TRACE_CLOCK
                Serial.print(F("SLEEP until "));
