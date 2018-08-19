@@ -8,7 +8,8 @@ der folgende Eigenschaften in sich vereint:
 * Eine Anzeige die ich auch ohne Brille ablesen kann, aber nicht gleich riesig ist
 * "entspannte" Zeitanzeige (Ich brauche es nicht auf die Minute genau) 
 * Anzeige ist nur so hell, wie gerade nötig und nicht mit geschlossenen Augen warnehmbar
-* Stellt sich selber überdie im Radiosignal verfügbare Zeitinformation (RDS)
+* Stellt sich selbst mittels der im Radiosignal verfügbare Zeitinformation (RDS)
+* Nicherchenfunktion (Radio an nach definiertem Interval (z.B. 20 Min für PowerNap)
 * Deaktivieren des Alarms kann nicht aus Versehen passieren
 * Sender und Lautstärke können nicht aus Versehen verstellt werden
 
@@ -94,7 +95,7 @@ und danach die Zeitanzeige bzw. die Zeitsuchanzeige
 Alternativ kann mit dem "Schlummer" Taster die Änderung der Weckzeit abgebrochen werden
 
 ## Alarmfunktion ein/ausshalten
-Die grundsätzliche aktivierung der Alarmzeit erfolgt mit dem Alarm schalter. Damit der Alarm bei erreichen der Weckzeit aktiviert wird, muss dieser Schalter auf "1" gestellt sein. Ist er auf "0" gestellt und der Alarm damit deaktiviert, wird dies durch zwei kleine Lücken in den seitlichen Kanten des Stundenrahmens im Display angezeigt.
+Die grundsätzliche Aktivierung der Alarmzeit erfolgt mit dem Alarmschalter. Damit der Alarm bei Erreichen der Weckzeit aktiviert wird, muss dieser Schalter auf "1" gestellt sein. Ist er auf "0" gestellt und der Alarm damit deaktiviert, wird dies durch zwei kleine Lücken in den seitlichen Kanten des Stundenrahmens im Display angezeigt.
 
 ## Alarm pausieren ("Schlummer")
 Wenn das Radio aufgrund des erreichens der Alarmzeit eingeschaltet wurde kann man den Alarm pausieren:
@@ -107,20 +108,20 @@ Um einen laufenden  oder pausierten Alarm zu beenden:
 
 ## Nickerchenfunktion
 Für ein Nickerchen, kann der Wecker unabhängig von der Weckzeit auf ein Intervall eingestellt werden, nach dem er dann die Weckfunktion aktiviert.
-1. Schlummer Taste drücken -> Auf dem Display erscheint ein  "Minutenquadrat, voreingestellt auf 20 Minuten (oder bei laufender Nickerchenfunktion mit der noch verbleibenden Laufzeit)
-2. Mit dem Drehregler kann die Dauer in 5 Minutenschritten geändert werden 
+1. Schlummer Taste drücken -> Auf dem Display erscheint ein  "Minutenquadrat", voreingestellt auf 20 Minuten (oder bei laufender Nickerchenfunktion mit der noch verbleibenden Laufzeit)
+2. Mit dem Drehregler kann die Dauer in 5 Minutenschritten zwischen 0 und 120 Minuten(großes komplettes Quadrat) geändert werden 
 3. Mit drücken auf den Drehregler (oder aber nach 10 Sekunden ohne Bedienhandlung) wird die gewählte Dauer bestätigen -> Bestätigtungshaken erscheint und danach die Uhrzeit
 
-Der Wecker alarmiert nach der eingestellten Zeit.
+Der Wecker alarmiert nach Ablauf der eingestellten Zeit.
 
 
-## Schlaffunktion / Radio aktivieren oder anpassen
+## Einschlaffunktion / Radio an
 Über die Schlaffunktion kann das Radio spontan für eine definierte Zeit eingeschaltet werden.
-1. Schlummer Taste drücken -> Auf dem Display erscheint ein  "Minutenquadrat, voreingestellt auf 45 Minuten (oder bei schon laufender Schlaffunktion mit der noch verbleibenden Laufzeit)
-2. Mit dem Drehregler kann die Dauer in 5 Minutenschritten geändert werden 
-3. Mit drücken auf den Drehregler die gewählte Dauer bestätigen -> Das Radio wird sich nach Ablaufen der Dauer abschalten
-Alternativ: Wird nach dem drücken der Schlummer Taste oder der Anpassung der Zeit keine weitere Bedienung vorgenommen, wird die
-angezeigt Zeit als Laufzeit übernommen
+1. Schlummer Taste drücken ->-> Auf dem Display erscheint ein  "Minutenquadrat", voreingestellt auf 20 Minuten für ein Nickerchen
+2. Mit dem Drehregler kann die Dauer veringern und über den Nullpunkt drehen-> das Radio schalte sich ein.
+3. Durch Weiterdrehen kann die Einschaltdauer in 5 Minutenschritten geändert werden 
+4. Mit drücken auf den Drehregler die gewählte Dauer bestätigen -> Das Radio wird sich nach Ablaufen der Dauer abschalten
+Alternativ: Wird nach der Anpassung der Zeit keine weitere Bedienung vorgenommen, wird die angezeigte Zeit als Laufzeit übernommen
 
 ## Schlaffunktion / Radio abschalten
 Wenn das Radio über die Schlaffunktion aktiviert wurde, kann es wie folgt abgeschaltet werden:
@@ -136,10 +137,27 @@ Sie besteht aus folgenden Elementen:
 
 Die Uhr übernimmt die aktuelle  RDS Uhrzeit nur dann, wenn sie das gleiche oder bessere Vertrauen in die RDS zeit als in die laufende Uhrzeit hat. 
 
+# Verhalten bei einem Neustart
+Ein Neustart der Uhr erfolgt
+* Nach einem Stromausfall
+* bei internen reboot aufgrund eines nicht behebaren Fehlers
+Um zu verhindern, dass ein Alarm durch den Stromausfall verpasst wird der Alarm unter folgenden Bedingungen aktiviert
+* (noch zu implementieren) Der Schlummermodus war aktiv
+* Eine "Nickerchenzeit" war gesetzt
+* Sowie die Zeit wieder korrekt festgestellt wurde und die eingestellte Alarmzeit weniger als 60 Minuten her ist 
+
+# Sender Preset auswählen
+Das Radio hat 4 Senderpresets, die auch bei der Suche der RDS Zeit durchsucht werden. Das Preset, das zum Wecken benutzt wird, kann wie folgt ausgewählt werde,
+1. Schlummer Taste drücken -> Auf dem Display erscheint das  "Minutenquadrat, mit der Restzeit der Schlaffunktion oder Nickerchenfunktion"
+2. Mit dem Drehregler die Zeit über den größen Wert hinaus drehen bis ein "P" auf dem Display erscheint.
+3. Drehregler drücken-> Presetauswahlmodus wird gestartet
+4. Mit dem Drehregler das gewünschte Preset auswählen
+Zusatz: Mit der Snooze Taste kann das Radio in diesem Modus ein und ausgeschaltet werden.
+
 # Diagnosefunktion(Trace)
 Um die Funktionstüchtigkeit des Weckers zu beurteilen können über die Trace Funktion interne Werte der Uhr abgerufen werden.
-1. Schlummer Taste drücken -> Auf dem Display erscheint das  "Minutenquadrat, mit der Restzeit der Schlaffunktion
-2. Mit dem Drehregler die Zeit größer als 60 Minuten stellen bis ein "T" auf dem Display erscheint.
+1. Schlummer Taste drücken -> Auf dem Display erscheint das  "Minutenquadrat, mit der Restzeit der Schlaffunktion oder Nickerchenfunktion"
+2. Mit dem Drehregler die Zeit über den größen Wert hinaus drehen bis ein "T" auf dem Display erscheint.
 3. Drehregler drücken-> Diagnosemodus wird gestartet
 4. Mit den Drehregler die gewünscht Diagnoseseite wählen
      1. Stundenwert der Uhr
@@ -151,6 +169,8 @@ Um die Funktionstüchtigkeit des Weckers zu beurteilen können über die Trace F
      7. Anzeige der Systemlaufzeit in BCD (Zeile 8 Sekunden, Zeile 7 Minuten, Zeile 6 Stunden, Zeile 5 Tage). Die Systemlaufzeit beginnt nach ca. 50 Tagen von vorne bzw. nach jedem "Reboot".
 
 # Demo Funktion
+
+#
 
 # Hintergründe für das Design
 ## Anzeige

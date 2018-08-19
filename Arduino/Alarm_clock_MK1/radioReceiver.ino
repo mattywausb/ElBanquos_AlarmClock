@@ -17,7 +17,7 @@
 
 #ifdef TRACE_ON
 #define TRACE_RADIO 1
-#define DEBUG_RDS_MOCKUP 1
+//#define DEBUG_RDS_MOCKUP 1
 #endif
 
 
@@ -26,7 +26,7 @@
 #define FIX_BAND     RADIO_BAND_FM   ///< The band that will be tuned by this sketch is FM.
 
 #define FINAL_VOLUME   15               ///< The volume that will finally be set by this sketch is level 8.
-#define FADE_STEP_INTERVAL  1500      // milliseconds to wait until next fade step
+#define FADE_STEP_INTERVAL  1000      // milliseconds to wait until next fade step
 #define RDS_SCAN_VOLUME 0          // Volume to use when scann (for debug reasons can be set >0)
 #define RDS_UPTODATE_THRESHOLD 50000  // Milliseconds we declare our information as actual
 
@@ -103,7 +103,7 @@ void radio_fadeIn() {
     bitSet(radio_operation_flags,RADIO_FLAG_FADE_IN);
     bitSet(radio_operation_flags,RADIO_FLAG_PLAY);    
     radio_lastFadeFrameTime=millis();
-    radio.setVolume(0);   /* Switch to RDS Station */ 
+    radio.setVolume(0);   
     radio.setMute(false);
     radio.setBandFrequency(FIX_BAND, stationPreset[currentPlayStation]);  
     #ifdef TRACE_RADIO
