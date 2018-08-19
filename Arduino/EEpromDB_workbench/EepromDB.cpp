@@ -6,7 +6,7 @@
 EepromDB::EepromDB()
 {
   /* everything we would do, can result in an error but theres no way to communicate this
-   *  thats why you have to initalize the object with the startDB method an check the resul
+   *  thats why you have to initalize the object with the startDB method an check the result
    */
 }
 
@@ -21,14 +21,15 @@ bool EepromDB::setupDB(int startAdress, int recordSize, int generationCount)
   /* TODO: check for upper limit */
   if(generationCount <3) return false;
 
+  db_startAdress=startAdress;
+  db_recordSize=recordSize;
+  db_generationCount=generationCount;
+  
   #ifdef TRACE_EEPROMDB
       Serial.println(F("\tParameters ok"));
       dumpToSerial();
   #endif
 
-  db_startAdress=startAdress;
-  db_recordSize=recordSize;
-  db_generationCount=generationCount;
   byte rowLength=db_recordSize+1;
   uint8_t prevTransIndex=EEPROM[startAdress+recordSize]; // get the transaction index of the first record
   uint8_t checkTransIndex;

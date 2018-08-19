@@ -291,11 +291,14 @@ static unsigned long evaluation_time;
        Serial.print(F("\tgood"));
       #endif 
 
-      if(candidate_rds_trust>=clock_rds_trust) 
+      if(candidate_rds_trust>=clock_rds_trust) // RDS has the better time, so take it
       {
+        int sleepMinutesMemory;
+        if(clock_sleep_stop_time!=TRIGGER_IS_OFF) sleepMinutesMemory=clock_sleep_stop_time-clock_getCurrentTime(); /* Rescue Sleeptimer */
         clock_sync_time=candidate_sync_time;
         clock_reference_time=candidate_reference_time;
         clock_rds_trust=candidate_rds_trust;
+        if(clock_sleep_stop_time!=TRIGGER_IS_OFF) clock_sleep_stop_time=(sleepMinutesMemory+clock_getCurrentTime()) % MINUTES_PER_DAY;
         #ifdef TRACE_CLOCK
           Serial.print(F("\tused by clock"));
         #endif 

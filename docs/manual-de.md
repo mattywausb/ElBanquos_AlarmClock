@@ -13,7 +13,7 @@ der folgende Eigenschaften in sich vereint:
 * Sender und Lautstärke können nicht aus Versehen verstellt werden
 
 # Bestandteile des Weckers
-* 8x8 Punkmatrix Display zur Anzeige aller Informationen
+* 8x8 LED Punkmatrix Display zur Anzeige aller Informationen
 * Snooze Taster
 * Drehregler und Taster
 * Schalter zum aktivieren der Alarmfunktion
@@ -158,3 +158,11 @@ Beim Ausprobieren verschiedener Darstellungen hat sich außerdem gezeigt, dass e
 der Gesamtgröße des Disyplays zu geben. Auch hat sich gezeigt, dass eine Unterbrechung von Linien immer 
 zu Ableseproblemen führt. Daraus ergab sich am Ende der Ansatz mit dem Rahmen.
 
+## Anordnung der Bedienelemente
+* Die Hauptbedienelmente liegen oben und werden vertikal betätigt, damit der Wecker beim Betätigen nicht aus versehen verschoben wird bzw. mit einer zweiten Hand festgehalten werden muss
+* der Lauststärkeregler liegt an der Seite unten, da er nach der Optimalen einstellung nicht aus Versehen verstellt werden soll
+* Die Hauptbedienelmente liegen hintereinander, entsprechend ihrer Priorität der Nutzung beim Wecken. Snooze zuerst, Alarm beenden als nächstes, Alarm aus/an als drittes
+
+## Bedienungsabfolge
+Die Bedienabfolge ist so gestaltet, dass die Bedienung beim zu Bett gehen(auch für ein Nickerchen) so wenig Geräusche wie möglich verursacht um "akustische Trigger", die den Körper wieder aufwecken, zu vermeiden.
+Akustische Trigger sind: Drücken des Drehreglers, aktivierung des Radios. 
