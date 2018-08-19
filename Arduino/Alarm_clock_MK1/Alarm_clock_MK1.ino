@@ -27,7 +27,7 @@ enum CLOCK_STATE {
   STATE_STOP_PROCEDURE,
   STATE_ALARM_INFO,  // Show Alarm time
   STATE_ALARM_CHANGE,  // Change and set Alarm time
-  STATE_SLEEP_SET,  // Activate Sleep and change sleep time
+  STATE_INTERVAL_SET,  // Activate Sleep and change sleep time
   STATE_PRESET_SELECT, // Select playing station
   STATE_DEBUG,  // Show some explicit values for debugging
   STATE_DEMO  // show fast time progressing
@@ -60,6 +60,7 @@ int station_trust=MAX_STATION_TRUST;
 
 MinutesOfDay_t clock_alarm_time[4]={0,0,0,0};
 byte clock_focussed_alarmIndex=0; 
+MinutesOfDay_t clock_nap_alarm_time=TRIGGER_IS_OFF;
 MinutesOfDay_t clock_sleep_stop_time=TRIGGER_IS_OFF;
 MinutesOfDay_t clock_alarm_stop_time=TRIGGER_IS_OFF;
 MinutesOfDay_t clock_snooze_stop_time=TRIGGER_IS_OFF;
@@ -70,6 +71,7 @@ EepromDB clockSettingsDB;
 
 struct clockSettingRecord {
   MinutesOfDay_t alarm_time;
+  MinutesOfDay_t nap_alarm_time;
   byte radio_preset;
 }; 
 
@@ -99,8 +101,20 @@ void setup()
   if(clockSettingsDB.readRecord((byte*)(&previous_settings)))
   {
     clock_alarm_time[0]=previous_settings.alarm_time;
+    clock_nap_alarm_time=previous_settings.nap_alarm_time;
     radio_setSelectedPreset(previous_settings.radio_preset);
   }
+
+  /* If we boot with nap trigger set, we need to alarm immediatly */
+  if(clock_nap_alarm_time!=TRIGGER_IS_OFF)
+  {
+  #ifdef TRACE_CLOCK
+     Serial.println(F("!! Emergency Wakeup by nap timer detection")); 
+  #endif
+    
+    enter_STATE_WAKEUP();
+  }
+  
 }
 
 
@@ -126,7 +140,8 @@ void loop() {
   }
 
   /* Alarm on logic */
-  if(clock_getCurrentTime()==clock_alarm_time[clock_focussed_alarmIndex]
+  if((clock_getCurrentTime()==clock_alarm_time[clock_focussed_alarmIndex] 
+  || clock_getCurrentTime()==clock_nap_alarm_time)
    &&clock_alarm_stop_time==TRIGGER_IS_OFF          // TBD: for multi alarm time, check if new alarm is running
    &&clock_state != STATE_ALARM_CHANGE
    &&clock_state != STATE_WAKEUP
@@ -162,7 +177,7 @@ void loop() {
     case STATE_WAKEUP:          process_STATE_WAKEUP(); break;
     case STATE_STOP_PROCEDURE:  process_STATE_STOP_PROCEDURE(); break;
     
-    case STATE_SLEEP_SET:       process_STATE_SLEEP_SET(); break;
+    case STATE_INTERVAL_SET:       process_STATE_INTERVAL_SET(); break;
 
     case STATE_PRESET_SELECT:  process_STATE_PRESET_SELECT(); break;
      
@@ -294,11 +309,21 @@ static unsigned long evaluation_time;
       if(candidate_rds_trust>=clock_rds_trust) // RDS has the better time, so take it
       {
         int sleepMinutesMemory;
+        bool firstTimeSinceBoot=(clock_rds_trust<RDS_TRUST_ACCEPTABLE && candidate_rds_trust >=RDS_TRUST_ACCEPTABLE );
         if(clock_sleep_stop_time!=TRIGGER_IS_OFF) sleepMinutesMemory=clock_sleep_stop_time-clock_getCurrentTime(); /* Rescue Sleeptimer */
         clock_sync_time=candidate_sync_time;
         clock_reference_time=candidate_reference_time;
         clock_rds_trust=candidate_rds_trust;
         if(clock_sleep_stop_time!=TRIGGER_IS_OFF) clock_sleep_stop_time=(sleepMinutesMemory+clock_getCurrentTime()) % MINUTES_PER_DAY;
+        if(firstTimeSinceBoot && input_masterSwitchIsSet() 
+             && (clock_reference_time>clock_alarm_time[0] && clock_reference_time<clock_alarm_time[0]+60)
+             ) // First time after boot and alarm ad to be trigerred in the last hour
+             {
+             enter_STATE_WAKEUP();       
+             #ifdef TRACE_CLOCK
+                 Serial.println(F("!! Emergency Wakeup for Alarmtime during RDS time sync")); 
+             #endif
+             }
         #ifdef TRACE_CLOCK
           Serial.print(F("\tused by clock"));
         #endif 
@@ -332,6 +357,7 @@ static unsigned long evaluation_time;
   #endif
 
 }
+
 void storeSettings() 
 {
    struct clockSettingRecord current_settings;
@@ -339,6 +365,7 @@ void storeSettings()
   /* write settings to eeprom */
   current_settings.alarm_time=clock_alarm_time[0];
   current_settings.radio_preset=radio_getSelectedPreset();
+  current_settings.nap_alarm_time=clock_nap_alarm_time;
   clockSettingsDB.updateRecord((byte*)(&current_settings));
 
 }
@@ -379,7 +406,7 @@ void enter_STATE_IDLE(){
 
 void process_STATE_IDLE(){
  if(input_snoozeGotPressed()) {    
-    enter_STATE_SLEEP_SET();
+    enter_STATE_INTERVAL_SET();
     return;
   }
   
@@ -405,7 +432,8 @@ void enter_STATE_WAKEUP(){
    clock_sleep_stop_time=TRIGGER_IS_OFF;
    clock_alarm_stop_time=clock_getCurrentTime()+ALARM_DURATION ;
    clock_snooze_stop_time=TRIGGER_IS_OFF;
-   
+   clock_nap_alarm_time=TRIGGER_IS_OFF;
+
    #ifdef TRACE_CLOCK
      Serial.println(F("#WAKEUP"));
    #endif
@@ -456,6 +484,8 @@ void exit_STATE_WAKEUP() {
   clock_snooze_stop_time=TRIGGER_IS_OFF;
   clock_alarm_stop_time=TRIGGER_IS_OFF; 
   clock_sleep_stop_time=TRIGGER_IS_OFF; 
+  clock_nap_alarm_time=TRIGGER_IS_OFF;
+     storeSettings();
   if(clock_state==STATE_WAKEUP) enter_STATE_IDLE();
 }
 
@@ -573,68 +603,95 @@ void process_STATE_ALARM_CHANGE(){
 }
 
 
-/* *************** STATE_SLEEP_SET ***************** */
+/* *************** STATE_INTERVAL_SET ***************** */
 
-void enter_STATE_SLEEP_SET(){
-  clock_state=STATE_SLEEP_SET; 
-  int sleepMinutes=45;
-  if(clock_sleep_stop_time!=TRIGGER_IS_OFF) sleepMinutes=clock_sleep_stop_time-clock_getCurrentTime();
-  if(sleepMinutes<0) sleepMinutes+MINUTES_PER_DAY;
-  input_setEncoderRange(0, 75,5,sleepMinutes); // 65+ for Setting Screens
+void enter_STATE_INTERVAL_SET(){
+  clock_state=STATE_INTERVAL_SET; 
+  int intervalMinutes=20;
+  if(clock_sleep_stop_time!=TRIGGER_IS_OFF) intervalMinutes=-(clock_sleep_stop_time-clock_getCurrentTime());
+  if(clock_nap_alarm_time!=TRIGGER_IS_OFF) intervalMinutes=clock_nap_alarm_time-clock_getCurrentTime();
+  input_setEncoderRange(-60, 135,5,intervalMinutes); // 120+ for Setting Screens
   output_renderSleepScene(input_getEncoderValue());
-  radio_switchOn();
   #ifdef TRACE_CLOCK
-         Serial.println(F("#SLEEP_SET"));
+         Serial.println(F("#INTERVAL_SET"));
   #endif
 }
 
-void process_STATE_SLEEP_SET(){
+void process_STATE_INTERVAL_SET(){
   if(input_snoozeGotPressed() )
   {
     #ifdef TRACE_CLOCK
-         Serial.println(F("SLEEP cancel by snooze"));
+         Serial.println(F("INTERVAL_SET cancel by snooze"));
     #endif
     radio_switchOff(); /* TBD: only if we are still in a wakeup interval */
     output_sequence_escape();
     enter_STATE_IDLE();
     return;
   }
+    if(input_hasEncoderChangeEvent()) 
+    {
+      if(input_getEncoderValue()>=0) radio_switchOff();
+      else  radio_switchOn();
+    }
 
-   if(input_getEncoderValue()<=60) {  // normal sleep setting
+   if(input_getEncoderValue()<=120) {  
+ 
+      /* --- Interval settings ---- */
       if(input_selectGotPressed() || input_getSecondsSinceLastEvent()> SECONDS_UNTIL_FALLBACK_SHORT)
       {
-      if(input_getEncoderValue()==0) {
-        #ifdef TRACE_CLOCK
-           Serial.println(F("SLEEP cancel by 0"));
-        #endif
-         radio_switchOff(); 
-         clock_sleep_stop_time=TRIGGER_IS_OFF;
-         enter_STATE_IDLE();
-        return;
-      }
-      clock_sleep_stop_time=(input_getEncoderValue()+clock_getCurrentTime()) % MINUTES_PER_DAY;
-      output_sequence_acknowlegde();
-      #ifdef TRACE_CLOCK
-           Serial.print(F("SLEEP until "));
-           trace_printTime(clock_sleep_stop_time);
-           Serial.println();         
-      #endif
-      enter_STATE_IDLE();
-      return;       
+        if(input_getEncoderValue()==0) {
+          #ifdef TRACE_CLOCK
+             Serial.println(F("INTERVAL_SET cancel by 0"));
+          #endif
+           radio_switchOff(); 
+           clock_sleep_stop_time=TRIGGER_IS_OFF;
+           clock_nap_alarm_time=TRIGGER_IS_OFF;
+           storeSettings() ;
+           enter_STATE_IDLE();
+          return;
+        }
+        if(input_getEncoderValue()>0)
+        {  /* This is a nap setting */
+          clock_nap_alarm_time=(input_getEncoderValue()+clock_getCurrentTime()) % MINUTES_PER_DAY;
+          output_sequence_acknowlegde();
+          storeSettings() ;
+          #ifdef TRACE_CLOCK
+               Serial.print(F("NAP until "));
+               trace_printTime(clock_nap_alarm_time);
+               Serial.println();         
+          #endif
+          enter_STATE_IDLE();
+          return;             
+        } else { /* This is a sleep setting */
+          clock_sleep_stop_time=(-input_getEncoderValue()+clock_getCurrentTime()) % MINUTES_PER_DAY;
+          output_sequence_acknowlegde();
+          #ifdef TRACE_CLOCK
+               Serial.print(F("SLEEP until "));
+               trace_printTime(clock_sleep_stop_time);
+               Serial.println();         
+          #endif
+          enter_STATE_IDLE();
+          return;           
+        }
+      
     }
+
     output_renderSleepScene(input_getEncoderValue());
-  } else { // out of sleep setting range, so we reach demo and debug modes
+    
+  } else { 
+    
+     /* --- Special mode selection ---- */
 
      if(input_getSecondsSinceLastEvent()> SECONDS_UNTIL_FALLBACK_SHORT) 
      {
-        radio_switchOff(); 
         clock_sleep_stop_time=TRIGGER_IS_OFF;
+        clock_nap_alarm_time=TRIGGER_IS_OFF;
         enter_STATE_IDLE();
         return;
      }
      
      switch(input_getEncoderValue()) {
-      case 65:
+      case 125:
             if(input_selectGotPressed()) 
             {
               enter_STATE_PRESET_SELECT();
@@ -642,7 +699,7 @@ void process_STATE_SLEEP_SET(){
             }
             output_renderLetterScene(4); // P
             break; 
-      case 70:
+      case 130:
             if(input_selectGotPressed()) 
             {
               enter_STATE_DEMO();
@@ -650,7 +707,7 @@ void process_STATE_SLEEP_SET(){
             }
             output_renderLetterScene(0); // D
             break;  
-      case 75:
+      case 135:
             if(input_selectGotPressed()) 
             {
               enter_STATE_DEBUG();

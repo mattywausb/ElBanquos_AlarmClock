@@ -14,7 +14,7 @@ der folgende Eigenschaften in sich vereint:
 
 # Bestandteile des Weckers
 * 8x8 LED Punkmatrix Display zur Anzeige aller Informationen
-* Snooze Taster
+* Schlummer Taster
 * Drehregler und Taster
 * Schalter zum aktivieren der Alarmfunktion
 * Lautsprecher an der Seite
@@ -31,7 +31,7 @@ und danach die Zeitanzeige bzw. die Zeitsuchanzeige
 5. ggf. muss noch der Schalter zum aktivieren der Alarmfunktion auf 1 gestellt werden -> In der Zeitanzeige wird der Status entsprechend angezeigt.
 
 Der Wecker schaltete sich nun zu der gesetzten Uhrzeit ein.
-* Um den Alarm für 10 minuten zu pausieren, Snooze Taste drücken
+* Um den Alarm für 10 minuten zu pausieren, Schlummer Taste drücken
 * Um den Alarm abzustellen, den Drehregler drehen-> Auf dem Display wird mit der Drehbewegung ein Quadrat gezeichnet. 
 Hat man weit geng gedreht um das Quadrat zu komplettieren, wird der Alarm beendet
 * Um zu verhindern, das der Alarm am nächsten Tag erneut aktiv wird, muss die Funktion mit dem Schalter komplett ausgeschaltet werden.
@@ -80,7 +80,7 @@ Die Weckzeitanzeige ist ähnlich wie die Uhrzeitanzeige abzulesen. Es gibt folge
 ## Weckzeit anzeigen
 Wenn sich das der Wecker im Ruhezustand befindet (Anzeige der Uhrzeit, keine laufender Alarm) kann man sich die eingestellte Weckzeit wie folgt anzeigen lassen:
 1. Drehregler drehen -> Die Weckzeit wird angezeigt
-2. Snooze Taster drücken -> Es wird wieder die Uhrzeit angezeigt
+2. Schlummer Taster drücken -> Es wird wieder die Uhrzeit angezeigt
 
 Alternativ springt die Anzeige auch nach einer kurzen Wartezeit selbständig zurück auf die Uhrzeit.
 
@@ -91,32 +91,41 @@ Wenn sich der Wecker im Ruhezustand befinden (Anzeige der Uhrzeit, kein laufende
 3. Drehregler drücken oder 10 Sekunden keine Bedienung vornehmen um die gewählte Zeit als Weckzeit festzulegen->-  Auf dem Display erscheint kurz ein "Bestätigungssymbol" 
 und danach die Zeitanzeige bzw. die Zeitsuchanzeige
 
-Alternativ kann mit dem "Snooze" Taster die Änderung der Weckzeit abgebrochen werden
+Alternativ kann mit dem "Schlummer" Taster die Änderung der Weckzeit abgebrochen werden
 
 ## Alarmfunktion ein/ausshalten
 Die grundsätzliche aktivierung der Alarmzeit erfolgt mit dem Alarm schalter. Damit der Alarm bei erreichen der Weckzeit aktiviert wird, muss dieser Schalter auf "1" gestellt sein. Ist er auf "0" gestellt und der Alarm damit deaktiviert, wird dies durch zwei kleine Lücken in den seitlichen Kanten des Stundenrahmens im Display angezeigt.
 
-## Alarm pausieren ("Snzooze")
+## Alarm pausieren ("Schlummer")
 Wenn das Radio aufgrund des erreichens der Alarmzeit eingeschaltet wurde kann man den Alarm pausieren:
-1. Snooze Taster betätigen -> Das Radio wird abgeschaltet und nach 10 Minuten erneut aktiviert
+1. Schlummer Taster betätigen -> Das Radio wird abgeschaltet und nach 10 Minuten erneut aktiviert
 
 ## Aktuellen Alarm beenden
 Um einen laufenden  oder pausierten Alarm zu beenden:
 1. Drehregler drehen-> Auf dem Display erscheint mit der Drehbewegung ein Quadrat 
 2. Drehregler weiter drehen bis das Quadrat komplettiert ist ->  der Alarm wird beendet
 
+## Nickerchenfunktion
+Für ein Nickerchen, kann der Wecker unabhängig von der Weckzeit auf ein Intervall eingestellt werden, nach dem er dann die Weckfunktion aktiviert.
+1. Schlummer Taste drücken -> Auf dem Display erscheint ein  "Minutenquadrat, voreingestellt auf 20 Minuten (oder bei laufender Nickerchenfunktion mit der noch verbleibenden Laufzeit)
+2. Mit dem Drehregler kann die Dauer in 5 Minutenschritten geändert werden 
+3. Mit drücken auf den Drehregler (oder aber nach 10 Sekunden ohne Bedienhandlung) wird die gewählte Dauer bestätigen -> Bestätigtungshaken erscheint und danach die Uhrzeit
+
+Der Wecker alarmiert nach der eingestellten Zeit.
+
+
 ## Schlaffunktion / Radio aktivieren oder anpassen
 Über die Schlaffunktion kann das Radio spontan für eine definierte Zeit eingeschaltet werden.
-1. Snooze Taste drücken -> Auf dem Display erscheint ein  "Minutenquadrat, voreingestellt auf 45 Minuten (oder bei schon laufender Schlaffunktion mit der noch verbleibenden Laufzeit)
+1. Schlummer Taste drücken -> Auf dem Display erscheint ein  "Minutenquadrat, voreingestellt auf 45 Minuten (oder bei schon laufender Schlaffunktion mit der noch verbleibenden Laufzeit)
 2. Mit dem Drehregler kann die Dauer in 5 Minutenschritten geändert werden 
 3. Mit drücken auf den Drehregler die gewählte Dauer bestätigen -> Das Radio wird sich nach Ablaufen der Dauer abschalten
-Alternativ: Wird nach dem drücken der Snooze Taste oder der Anpassung der Zeit keine weitere Bedienung vorgenommen, wird die
+Alternativ: Wird nach dem drücken der Schlummer Taste oder der Anpassung der Zeit keine weitere Bedienung vorgenommen, wird die
 angezeigt Zeit als Laufzeit übernommen
 
 ## Schlaffunktion / Radio abschalten
 Wenn das Radio über die Schlaffunktion aktiviert wurde, kann es wie folgt abgeschaltet werden:
-1. Snooze Taste drücken -> Auf dem Display erscheint das  "Minutenquadrat, mit der Restzeit der Schlaffunktion
-2. Snooze Taste drücken -> die Schlaffunktion wird abgeschaltet
+1. Schlummer Taste drücken -> Auf dem Display erscheint das  "Minutenquadrat, mit der Restzeit der Schlaffunktion
+2. Schlummer Taste drücken -> die Schlaffunktion wird abgeschaltet
 
 # Zeitsuchanzeige
 Die Zeitsichanzeige wird angezeigt, solange der Wecker nach dem Einschalten keine zuverlässige Uhrzeitinformation besitzt.
@@ -129,7 +138,7 @@ Die Uhr übernimmt die aktuelle  RDS Uhrzeit nur dann, wenn sie das gleiche oder
 
 # Diagnosefunktion(Trace)
 Um die Funktionstüchtigkeit des Weckers zu beurteilen können über die Trace Funktion interne Werte der Uhr abgerufen werden.
-1. Snooze Taste drücken -> Auf dem Display erscheint das  "Minutenquadrat, mit der Restzeit der Schlaffunktion
+1. Schlummer Taste drücken -> Auf dem Display erscheint das  "Minutenquadrat, mit der Restzeit der Schlaffunktion
 2. Mit dem Drehregler die Zeit größer als 60 Minuten stellen bis ein "T" auf dem Display erscheint.
 3. Drehregler drücken-> Diagnosemodus wird gestartet
 4. Mit den Drehregler die gewünscht Diagnoseseite wählen
@@ -161,7 +170,7 @@ zu Ableseproblemen führt. Daraus ergab sich am Ende der Ansatz mit dem Rahmen.
 ## Anordnung der Bedienelemente
 * Die Hauptbedienelmente liegen oben und werden vertikal betätigt, damit der Wecker beim Betätigen nicht aus versehen verschoben wird bzw. mit einer zweiten Hand festgehalten werden muss
 * der Lauststärkeregler liegt an der Seite unten, da er nach der Optimalen einstellung nicht aus Versehen verstellt werden soll
-* Die Hauptbedienelmente liegen hintereinander, entsprechend ihrer Priorität der Nutzung beim Wecken. Snooze zuerst, Alarm beenden als nächstes, Alarm aus/an als drittes
+* Die Hauptbedienelmente liegen hintereinander, entsprechend ihrer Priorität der Nutzung beim Wecken. Schlummer zuerst, Alarm beenden als nächstes, Alarm aus/an als drittes
 
 ## Bedienungsabfolge
 Die Bedienabfolge ist so gestaltet, dass die Bedienung beim zu Bett gehen(auch für ein Nickerchen) so wenig Geräusche wie möglich verursacht um "akustische Trigger", die den Körper wieder aufwecken, zu vermeiden.

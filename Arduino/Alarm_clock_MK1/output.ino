@@ -199,7 +199,11 @@ void output_renderSleepScene(int minutes) {
     clock_hour_bitmap=0;
     flag_indicator_bitmap=0;
     matrix_ring3_bitmap=0;
-    output_renderMinuteHighresBitmaps(minutes,false);
+    if(minutes<=60) output_renderMinuteHighresBitmaps(minutes,false);
+    else {
+      output_renderMinuteHighresBitmaps(60,false);
+      output_renderRing3Progress((minutes-60)/3); 
+    }
     output_matrix_displayUpdate();
 }
 
@@ -211,6 +215,9 @@ void output_renderSleepScene(int minutes) {
 void output_renderLetterScene(byte letter_index) 
 {
   output_render_letter(letter_index,2) ;
+  led8x8.setRow(LED8X8_PANEL_0,0,0);
+  led8x8.setRow(LED8X8_PANEL_0,1,0);
+  led8x8.setRow(LED8X8_PANEL_0,7,0);
 }
 
 /* ***************** Preset select Procedure Scene  *************************************+ 
@@ -335,7 +342,7 @@ void output_sequence_snooze(){
    */
 void output_sequence_alert()
 {
-   const byte colPattern[]={0xff,0x81,0xa5,0xa5,0xa5,0xbd,0xff}; /* twisted */
+   const byte colPattern[]={0xff,0xff,0x81,0xa5,0xa5,0xa5,0xbd,0xff}; /* twisted */
    led8x8.clearDisplay(LED8X8_PANEL_0); 
    for(byte i=0;i<sizeof(colPattern);i++){
        led8x8.setRow(LED8X8_PANEL_0,i,mirroredPattern(colPattern[i]));     /* using row to turn picture-90 degree */
@@ -431,12 +438,15 @@ void output_matrix_displayUpdate() {
 void output_renderMinuteHighresBitmaps(int minutes,bool zeroIs60)
 { 
 
-    unsigned int simple_pattern=0x0fff>>(12-(minutes/5));
+    unsigned int simple_pattern;
+    
+    if(minutes>0) simple_pattern=0x0fff>>(12-(minutes/5));
+    else simple_pattern=0x0fff<<(12+(minutes/5));
     /* ____BA9876543210 */
     /* ____dd+cc+bb+aa+ */
     /* ____9876543210BA */
      
-    if(minutes>0) clock_minute_bitmap=(simple_pattern<<2)|((simple_pattern>>10)&B00000011);
+    if(minutes!=0) clock_minute_bitmap=(simple_pattern<<2)|((simple_pattern>>10)&B00000011);  // shift zero to top center
     else if(zeroIs60) clock_minute_bitmap=0xffff;
                  else clock_minute_bitmap=0x0249; /* 0000002004008001 */
     
@@ -456,6 +466,8 @@ void output_renderMinuteHighresBitmaps(int minutes,bool zeroIs60)
   if(value==0) matrix_ring3_bitmap=0;
   if(value>0) matrix_ring3_bitmap=0x000fffff>>(20-value);
   if(value<0) matrix_ring3_bitmap=0x000fffff<<(20+value);
+
+  matrix_ring3_bitmap=(matrix_ring3_bitmap<<2)|((matrix_ring3_bitmap>>18)&B00000011); // shift zero to center top
     #ifdef TRACE_OUTPUT_RING3_BITSET 
 
         Serial.print(value);

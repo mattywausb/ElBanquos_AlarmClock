@@ -92,7 +92,7 @@ bool EepromDB::formatDB()
     for(int byteIndex=0; byteIndex<db_recordSize;byteIndex++) {
       EEPROM[db_startAdress+rowIndex*rowLength+byteIndex]=0xff; // initialize the cell with FF
     }
-    EEPROM[db_startAdress+rowIndex*rowLength+db_recordSize]=rowIndex+250; // Write initial transaction index
+    EEPROM[db_startAdress+rowIndex*rowLength+db_recordSize]=rowIndex; // Write initial transaction index
   }
   db_currentTransactionIndex=db_generationCount-1;
   db_currentRowIndex=db_generationCount; // this Row Index value is invalid to show we havent written anything yet
