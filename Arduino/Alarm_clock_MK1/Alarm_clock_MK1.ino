@@ -1,6 +1,7 @@
 
 
 #include "mainSettings.h"
+#include "EepromDB.h"
 
 #ifdef TRACE_ON
 #define TRACE_CLOCK 1
@@ -65,26 +66,41 @@ MinutesOfDay_t clock_snooze_stop_time=TRIGGER_IS_OFF;
 byte clock_alarm_stopprocedure_progress=0;
 unsigned long clock_last_wakeup_stop_millis=0;  
 
+EepromDB clockSettingsDB;
 
-
+struct clockSettingRecord {
+  MinutesOfDay_t alarm_time;
+  byte radio_preset;
+}; 
 
 /* ************************************************************
  *     Main Setup
  * ************************************************************
  */
 
-void setup() {
- #ifdef TRACE_ON 
-    char compile_signature[] = "--- START (Build: " __DATE__ " " __TIME__ ") ---";   
-    Serial.begin(9600);
-    Serial.println(compile_signature); 
- #endif
- 
+void setup() 
+{
+  
+  #ifdef TRACE_ON 
+     char compile_signature[] = "--- START (Build: " __DATE__ " " __TIME__ ") ---";   
+     Serial.begin(9600);
+     Serial.println(compile_signature); 
+  #endif
+
+  struct clockSettingRecord previous_settings;
+   
   radio_setup();
   output_setup();
   input_setup(0, MINUTES_PER_DAY-1,15); /* Encoder Range 24 hoursis,stepping quater hours */
-
+  clockSettingsDB.setupDB(0, sizeof(previous_settings), 4);
   clock_alarm_time[0]=DEFAULT_ALARM_TIME; /* Fall back alarm */
+
+  /* get settings from eeprom */
+  if(clockSettingsDB.readRecord((byte*)(&previous_settings)))
+  {
+    clock_alarm_time[0]=previous_settings.alarm_time;
+    radio_setSelectedPreset(previous_settings.radio_preset);
+  }
 }
 
 
@@ -313,6 +329,16 @@ static unsigned long evaluation_time;
   #endif
 
 }
+void storeSettings() 
+{
+   struct clockSettingRecord current_settings;
+
+  /* write settings to eeprom */
+  current_settings.alarm_time=clock_alarm_time[0];
+  current_settings.radio_preset=radio_getSelectedPreset();
+  clockSettingsDB.updateRecord((byte*)(&current_settings));
+
+}
 
 
 /* ###########  Output helper ########## */
@@ -528,6 +554,7 @@ void process_STATE_ALARM_CHANGE(){
       if(input_selectGotPressed()) {
         output_sequence_acknowlegde();
         clock_alarm_time[clock_focussed_alarmIndex]=input_getEncoderValue();
+        storeSettings() ;
         enter_STATE_IDLE();return;       
       }
 
@@ -651,7 +678,7 @@ void enter_STATE_PRESET_SELECT(){
 void process_STATE_PRESET_SELECT(){
     if(input_selectGotPressed()||input_getSecondsSinceLastEvent()> SECONDS_UNTIL_FALLBACK_LONG
         ) {
-          /* TODO: Store in EEPROM */
+          storeSettings();
             enter_STATE_IDLE();
             return;
     }

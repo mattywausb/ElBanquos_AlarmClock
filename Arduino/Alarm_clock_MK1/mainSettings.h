@@ -10,8 +10,8 @@ typedef  int MinutesOfDay_t;
 #define ALARM_DURATION  60  // Number of Minutes the Radio will play after last alarm trigger
 #define SNOOZE_DURATION 10   // Number of Minutes for the snooze time
 
-//#define DEFAULT_ALARM_TIME 6*60+30
-#define DEFAULT_ALARM_TIME 16*60+30    // Debug Wake time
+#define DEFAULT_ALARM_TIME 6*60+30
+//#define DEFAULT_ALARM_TIME 16*60+30    // Debug Wake time
 
 #define SECONDS_UNTIL_FALLBACK_LONG 15   // Number of seconds the clock will wait before falling back 
 #define SECONDS_UNTIL_FALLBACK_SHORT 5   // Number of seconds the clock will wait before falling back 
