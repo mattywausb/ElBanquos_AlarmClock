@@ -17,8 +17,12 @@
 
 #ifdef TRACE_ON
 #define TRACE_RADIO 1
-//#define DEBUG_RDS_MOCKUP 1
 #endif
+
+#ifdef DEBUG
+#define DEBUG_RDS_MOCKUP_TIME 23*60+54
+#endif
+
 
 
 // ----- Fixed settings here. -----
@@ -158,9 +162,8 @@ void radio_setSelectedPreset(byte newPlayStation)
 /* -----------  Information ------------- */
 
 int radio_getLastRdsTimeInfo() { 
-  #ifdef DEBUG_RDS_MOCKUP
-//     return 16*60+29;
-     return 23*60+54;
+  #ifdef DEBUG_RDS_MOCKUP_TIME
+     return DEBUG_RDS_MOCKUP_TIME;
   #endif
   return radio_rdsTimeInfo;
   };
@@ -171,6 +174,15 @@ unsigned long radio_getRdsTimeAge() {  /* Returns Age of the rds information in 
   return 0;
   #endif
   if(radio_lastRdsCatchTime==0) return 600000; // obviously we never have seen anything
+
+  #ifdef DEBUG_RDS_MOCKUP_TIME
+     static unsigned long prev_telegram_time=millis();
+     if(millis()-prev_telegram_time>10000) {
+        prev_telegram_time=millis();
+        return 1000; // age is 1 second
+     } else return 600000; // Fake very high age
+  #endif
+  
   return(millis()-radio_lastRdsCatchTime);
 };
 

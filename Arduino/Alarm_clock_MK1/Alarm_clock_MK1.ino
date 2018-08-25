@@ -60,10 +60,9 @@ int station_trust=MAX_STATION_TRUST;
 
 MinutesOfDay_t clock_alarm_time[4]={0,0,0,0};
 byte clock_focussed_alarmIndex=0; 
-MinutesOfDay_t clock_nap_alarm_time=TRIGGER_IS_OFF;
 MinutesOfDay_t clock_sleep_stop_time=TRIGGER_IS_OFF;
 MinutesOfDay_t clock_alarm_stop_time=TRIGGER_IS_OFF;
-MinutesOfDay_t clock_snooze_stop_time=TRIGGER_IS_OFF;
+MinutesOfDay_t clock_interval_alarm_time=TRIGGER_IS_OFF;
 byte clock_alarm_stopprocedure_progress=0;
 unsigned long clock_last_wakeup_stop_millis=0;  
 
@@ -71,7 +70,7 @@ EepromDB clockSettingsDB;
 
 struct clockSettingRecord {
   MinutesOfDay_t alarm_time;
-  MinutesOfDay_t nap_alarm_time;
+  MinutesOfDay_t interval_alarm_time;
   byte radio_preset;
 }; 
 
@@ -91,9 +90,7 @@ void setup()
 
   struct clockSettingRecord previous_settings;
    
-  radio_setup();
   output_setup();
-  input_setup(0, MINUTES_PER_DAY-1,15); /* Encoder Range 24 hoursis,stepping quater hours */
   clockSettingsDB.setupDB(0, sizeof(previous_settings), 4);
   clock_alarm_time[0]=DEFAULT_ALARM_TIME; /* Fall back alarm */
 
@@ -101,15 +98,18 @@ void setup()
   if(clockSettingsDB.readRecord((byte*)(&previous_settings)))
   {
     clock_alarm_time[0]=previous_settings.alarm_time;
-    clock_nap_alarm_time=previous_settings.nap_alarm_time;
+    clock_interval_alarm_time=previous_settings.interval_alarm_time;
     radio_setSelectedPreset(previous_settings.radio_preset);
   }
 
+  radio_setup();
+  input_setup(0, MINUTES_PER_DAY-1,15); /* Encoder Range 24 hoursis,stepping quater hours */
+
   /* If we boot with nap trigger set, we need to alarm immediatly */
-  if(clock_nap_alarm_time!=TRIGGER_IS_OFF)
+  if(clock_interval_alarm_time!=TRIGGER_IS_OFF)
   {
   #ifdef TRACE_CLOCK
-     Serial.println(F("!! Emergency Wakeup by nap timer detection")); 
+     Serial.println(F("!! Emergency Wakeup by interval timer detection")); 
   #endif
     
     enter_STATE_WAKEUP();
@@ -140,8 +140,7 @@ void loop() {
   }
 
   /* Alarm on logic */
-  if((clock_getCurrentTime()==clock_alarm_time[clock_focussed_alarmIndex] 
-  || clock_getCurrentTime()==clock_nap_alarm_time)
+  if((clock_getCurrentTime()==clock_alarm_time[clock_focussed_alarmIndex] )
    &&clock_alarm_stop_time==TRIGGER_IS_OFF          // TBD: for multi alarm time, check if new alarm is running
    &&clock_state != STATE_ALARM_CHANGE
    &&clock_state != STATE_WAKEUP
@@ -152,8 +151,8 @@ void loop() {
       return;
   }
 
-  /* Snooze end logic */
-  if(clock_getCurrentTime()==clock_snooze_stop_time) {
+  /* Interval end logic (snooze or nap) */
+  if(clock_getCurrentTime()==clock_interval_alarm_time) {
     resume_STATE_WAKEUP();
     return;
   }
@@ -365,7 +364,7 @@ void storeSettings()
   /* write settings to eeprom */
   current_settings.alarm_time=clock_alarm_time[0];
   current_settings.radio_preset=radio_getSelectedPreset();
-  current_settings.nap_alarm_time=clock_nap_alarm_time;
+  current_settings.interval_alarm_time=clock_interval_alarm_time;
   clockSettingsDB.updateRecord((byte*)(&current_settings));
 
 }
@@ -428,23 +427,32 @@ void process_STATE_IDLE(){
 
 void enter_STATE_WAKEUP(){
    clock_state=STATE_WAKEUP;
-   if(clock_alarm_stop_time==TRIGGER_IS_OFF) radio_fadeIn();
+   radio_fadeIn();
    clock_sleep_stop_time=TRIGGER_IS_OFF;
    clock_alarm_stop_time=clock_getCurrentTime()+ALARM_DURATION ;
-   clock_snooze_stop_time=TRIGGER_IS_OFF;
-   clock_nap_alarm_time=TRIGGER_IS_OFF;
+   clock_interval_alarm_time=TRIGGER_IS_OFF;
 
    #ifdef TRACE_CLOCK
      Serial.println(F("#WAKEUP"));
    #endif
    callIdleScene(clock_getCurrentTime()
-                               ,clock_snooze_stop_time==TRIGGER_IS_OFF?0:ALARM_INDICATOR_SNOOZE
+                               ,clock_interval_alarm_time==TRIGGER_IS_OFF?0:ALARM_INDICATOR_SNOOZE
                                |(input_masterSwitchIsSet()?ALARM_INDICATOR_ON :ALARM_INDICATOR_OFF));
+}
+
+void enter_STATE_WAKEUP_silentWithInterval(){
+   clock_state=STATE_WAKEUP;
+   clock_sleep_stop_time=TRIGGER_IS_OFF;
+   clock_alarm_stop_time=clock_getCurrentTime()+ALARM_DURATION ;
+   #ifdef TRACE_CLOCK
+     Serial.println(F("#WAKEUP with interval"));
+   #endif
 }
 
 void resume_STATE_WAKEUP(){
    clock_state=STATE_WAKEUP;
-   clock_snooze_stop_time=TRIGGER_IS_OFF;
+   clock_interval_alarm_time=TRIGGER_IS_OFF;
+   clock_alarm_stop_time=clock_getCurrentTime()+ALARM_DURATION ;
    radio_fadeIn();
    #ifdef TRACE_CLOCK
      Serial.println(F(">WAKEUP"));
@@ -454,13 +462,13 @@ void resume_STATE_WAKEUP(){
 void process_STATE_WAKEUP(){
   byte alarmIndicator=0;
  if(input_snoozeGotPressed()) {  
-    clock_alarm_stop_time=clock_getCurrentTime()+ALARM_DURATION ;   
-    clock_snooze_stop_time=clock_getCurrentTime()+SNOOZE_DURATION;
+    clock_alarm_stop_time=(clock_getCurrentTime()+ALARM_DURATION+SNOOZE_DURATION)%MINUTES_PER_DAY ;   
+    clock_interval_alarm_time=(clock_getCurrentTime()+SNOOZE_DURATION)%MINUTES_PER_DAY;
     radio_switchOff();
     output_sequence_acknowlegde();
    #ifdef TRACE_CLOCK
      Serial.print(F("WAKEUP:Snooze "));
-     trace_printTime(clock_snooze_stop_time);
+     trace_printTime(clock_interval_alarm_time);
      Serial.println();
    #endif
     return;
@@ -468,7 +476,7 @@ void process_STATE_WAKEUP(){
   
   if(input_hasEncoderChangeEvent()) {enter_STATE_STOP_PROCEDURE();return;}
 
-  if( clock_snooze_stop_time!=TRIGGER_IS_OFF) alarmIndicator|=ALARM_INDICATOR_SNOOZE;
+  if( clock_interval_alarm_time!=TRIGGER_IS_OFF) alarmIndicator|=ALARM_INDICATOR_SNOOZE;
   if(!input_masterSwitchIsSet()) alarmIndicator|=ALARM_INDICATOR_OFF;
 
   callIdleScene(clock_getCurrentTime()
@@ -481,10 +489,9 @@ void exit_STATE_WAKEUP() {
      Serial.println(F("<WAKEUP"));
    #endif
   radio_switchOff();
-  clock_snooze_stop_time=TRIGGER_IS_OFF;
+  clock_interval_alarm_time=TRIGGER_IS_OFF;
   clock_alarm_stop_time=TRIGGER_IS_OFF; 
   clock_sleep_stop_time=TRIGGER_IS_OFF; 
-  clock_nap_alarm_time=TRIGGER_IS_OFF;
      storeSettings();
   if(clock_state==STATE_WAKEUP) enter_STATE_IDLE();
 }
@@ -507,7 +514,7 @@ void process_STATE_STOP_PROCEDURE(){
      Serial.println(F("STOP_PROCEDURE:Snoozing"));
     #endif
     clock_alarm_stop_time=clock_getCurrentTime()+ALARM_DURATION ;  
-    clock_snooze_stop_time=clock_getCurrentTime()+SNOOZE_DURATION;
+    clock_interval_alarm_time=clock_getCurrentTime()+SNOOZE_DURATION;
     output_sequence_acknowlegde();
     radio_switchOff();
     resume_STATE_WAKEUP();
@@ -609,7 +616,7 @@ void enter_STATE_INTERVAL_SET(){
   clock_state=STATE_INTERVAL_SET; 
   int intervalMinutes=20;
   if(clock_sleep_stop_time!=TRIGGER_IS_OFF) intervalMinutes=-(clock_sleep_stop_time-clock_getCurrentTime());
-  if(clock_nap_alarm_time!=TRIGGER_IS_OFF) intervalMinutes=clock_nap_alarm_time-clock_getCurrentTime();
+  if(clock_interval_alarm_time!=TRIGGER_IS_OFF) intervalMinutes=clock_interval_alarm_time-clock_getCurrentTime();
   input_setEncoderRange(-60, 135,5,intervalMinutes); // 120+ for Setting Screens
   output_renderSleepScene(input_getEncoderValue());
   #ifdef TRACE_CLOCK
@@ -618,57 +625,64 @@ void enter_STATE_INTERVAL_SET(){
 }
 
 void process_STATE_INTERVAL_SET(){
+
+  /* Snooze press */
   if(input_snoozeGotPressed() )
   {
     #ifdef TRACE_CLOCK
          Serial.println(F("INTERVAL_SET cancel by snooze"));
     #endif
-    radio_switchOff(); /* TBD: only if we are still in a wakeup interval */
+    radio_switchOff(); // TODO: only if we are still in a wakeup interval 
     clock_sleep_stop_time=TRIGGER_IS_OFF;
-    if(input_getEncoderValue()<0 ) clock_nap_alarm_time=TRIGGER_IS_OFF;
-    output_sequence_escape();
+    if(input_getEncoderValue()<0 ) {
+      clock_interval_alarm_time=TRIGGER_IS_OFF;
+      output_sequence_escape();
+    }
     enter_STATE_IDLE();
     return;
   }
-    if(input_hasEncoderChangeEvent()) 
-    {
+
+  /* Encoder change */
+  if(input_hasEncoderChangeEvent()) 
+  {
       if(input_getEncoderValue()>=0) radio_switchOff();
       else  radio_switchOn();
-    }
+  }
 
-   if(input_getEncoderValue()<=120) {  
+  /* Select press, depending on encoder value */
+  if(input_getEncoderValue()<=120) {  
  
       /* --- Interval settings ---- */
       if(input_selectGotPressed() || input_getSecondsSinceLastEvent()> SECONDS_UNTIL_FALLBACK_SHORT)
       {
-        if(input_getEncoderValue()==0) {
+        if(input_getEncoderValue()==0) {  // Reset by 0
           #ifdef TRACE_CLOCK
              Serial.println(F("INTERVAL_SET cancel by 0"));
           #endif
            output_sequence_acknowlegde();
            radio_switchOff(); 
            clock_sleep_stop_time=TRIGGER_IS_OFF;
-           clock_nap_alarm_time=TRIGGER_IS_OFF;
+           clock_interval_alarm_time=TRIGGER_IS_OFF;
            storeSettings() ;
            enter_STATE_IDLE();
           return;
         }
-        if(input_getEncoderValue()>0)
-        {  /* This is a nap setting */
-          clock_nap_alarm_time=(input_getEncoderValue()+clock_getCurrentTime()) % MINUTES_PER_DAY;
+        if(input_getEncoderValue()>0)  // --- This is a nap setting---
+        {  
+          clock_interval_alarm_time=(input_getEncoderValue()+clock_getCurrentTime()) % MINUTES_PER_DAY;
           clock_sleep_stop_time=TRIGGER_IS_OFF;
           output_sequence_acknowlegde();
           storeSettings() ;
           #ifdef TRACE_CLOCK
                Serial.print(F("NAP until "));
-               trace_printTime(clock_nap_alarm_time);
+               trace_printTime(clock_interval_alarm_time);
                Serial.println();         
           #endif
-          enter_STATE_IDLE();
+          enter_STATE_WAKEUP_silentWithInterval();
           return;             
-        } else { /* This is a sleep setting */
+        } else {  // --- This is a sleep setting---
           clock_sleep_stop_time=(-input_getEncoderValue()+clock_getCurrentTime()) % MINUTES_PER_DAY;
-          clock_nap_alarm_time=TRIGGER_IS_OFF;
+          clock_interval_alarm_time=TRIGGER_IS_OFF;
           output_sequence_acknowlegde();
           #ifdef TRACE_CLOCK
                Serial.print(F("SLEEP until "));
@@ -690,7 +704,7 @@ void process_STATE_INTERVAL_SET(){
      if(input_getSecondsSinceLastEvent()> SECONDS_UNTIL_FALLBACK_SHORT) 
      {
         clock_sleep_stop_time=TRIGGER_IS_OFF;
-        clock_nap_alarm_time=TRIGGER_IS_OFF;
+        clock_interval_alarm_time=TRIGGER_IS_OFF;
         enter_STATE_IDLE();
         return;
      }
