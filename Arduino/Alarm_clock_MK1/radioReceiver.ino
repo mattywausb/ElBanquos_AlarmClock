@@ -16,12 +16,15 @@
 #include <RDSParser.h>
 
 #ifdef TRACE_ON
-#define TRACE_RADIO 1
+#define TRACE_RADIO
 #endif
 
 #ifdef DEBUG
-#define DEBUG_RDS_MOCKUP_TIME 23*60+54
+//#define DEBUG_RDS_MOCKUP_TIME 23*60+54
+#define DEBUG_RDS_MOCKUP_TIME 7*60+54
 #endif
+
+//#define RADIO_PLUGGED
 
 
 
@@ -62,6 +65,8 @@ unsigned long  radio_lastFadeFrameTime=0;
 char radio_lastStationName[20]="<unknown>";
 
 
+
+
 /* ################   interface   #########################################
  * #####################################################################          
  */
@@ -80,14 +85,18 @@ void radio_setRdsScanActive(bool flag)
 void radio_activateRdsStation() {
   if(!bitRead(radio_operation_flags,RADIO_FLAG_PLAY)) {  /* if nobody listens */
     if(bitRead(radio_operation_flags,RADIO_FLAG_RDS)) {
+      #ifdef RADIO_PLUGGED
       radio.setVolume(RDS_SCAN_VOLUME);   /* Switch to RDS Station */ 
       radio.setMute(false);
       radio.setBandFrequency(FIX_BAND, stationPreset[currentRdsStation]);  
+      #endif
       #ifdef TRACE_RADIO
             displayStatus();
       #endif
     } else {
+      #ifdef RADIO_PLUGGED
       radio.setMute(true); /* shutdown radio */
+      #endif
     }
   }
 }
@@ -107,11 +116,14 @@ void radio_fadeIn() {
     bitSet(radio_operation_flags,RADIO_FLAG_FADE_IN);
     bitSet(radio_operation_flags,RADIO_FLAG_PLAY);    
     radio_lastFadeFrameTime=millis();
+    #ifdef RADIO_PLUGGED
     radio.setVolume(0);   
     radio.setMute(false);
     radio.setBandFrequency(FIX_BAND, stationPreset[currentPlayStation]);  
+    #endif
     #ifdef TRACE_RADIO
-            displayStatus();
+          Serial.println(F("Radio: Start Fading in"));
+          displayStatus();
     #endif
 }
 
@@ -121,31 +133,45 @@ void radio_fadeOut() {
     bitClear(radio_operation_flags,RADIO_FLAG_FADE_IN);
     bitSet(radio_operation_flags,RADIO_FLAG_PLAY);    
     radio_lastFadeFrameTime=millis();
+    #ifdef TRACE_RADIO
+      Serial.println(F("Radio: Start Fading out"));
+    #endif
 }
 
 void radio_switchOn(){
   if(!bitRead(radio_operation_flags,RADIO_FLAG_PLAY)){  /* not already playing */
+      #ifdef RADIO_PLUGGED
       radio.setVolume(0);   /* Switch to RDS Station */ 
       radio.setMute(false);
       radio.setBandFrequency(FIX_BAND, stationPreset[currentPlayStation]);  
       radio.clearRDS();
-      #ifdef TRACE_RADIO
-            displayStatus();
       #endif
+
   }  
   bitSet(radio_operation_flags,RADIO_FLAG_PLAY);
   bitClear(radio_operation_flags,RADIO_FLAG_FADE_IN);
   bitClear(radio_operation_flags,RADIO_FLAG_FADE_OUT);
+  #ifdef RADIO_PLUGGED
   radio.setMute(false);
   radio.setVolume(FINAL_VOLUME);
+  #endif
+  #ifdef TRACE_RADIO
+  Serial.println(F("Radio: Switched On"));
+  displayStatus();
+  #endif
 }
 
 void radio_switchOff(){
+  #ifdef RADIO_PLUGGED
   radio.setVolume(0);
+  #endif
   bitClear(radio_operation_flags,RADIO_FLAG_PLAY);
   bitClear(radio_operation_flags,RADIO_FLAG_FADE_IN);
   bitClear(radio_operation_flags,RADIO_FLAG_FADE_OUT);
   radio_activateRdsStation();
+  #ifdef TRACE_RADIO
+  Serial.println(F("Radio: Switched Off"));
+  #endif
 }
 
 void radio_setSelectedPreset(byte newPlayStation)
@@ -153,8 +179,10 @@ void radio_setSelectedPreset(byte newPlayStation)
   currentPlayStation=newPlayStation;
   if(radio_isPlaying()) 
   {
+    #ifdef RADIO_PLUGGED
     radio.setBandFrequency(FIX_BAND, stationPreset[currentPlayStation]);  
     radio.clearRDS();  
+    #endif
   }
 
 }
@@ -163,26 +191,28 @@ void radio_setSelectedPreset(byte newPlayStation)
 
 int radio_getLastRdsTimeInfo() { 
   #ifdef DEBUG_RDS_MOCKUP_TIME
-     return DEBUG_RDS_MOCKUP_TIME;
+     return (DEBUG_RDS_MOCKUP_TIME+millis()/60000)%1440;
   #endif
   return radio_rdsTimeInfo;
   };
 
 
-unsigned long radio_getRdsTimeAge() {  /* Returns Age of the rds information in seconds (600000= 10 min = infinity) */
+/* get age of the rds information in millis (600000= 10 min = infinity) */
+unsigned long radio_getRdsTimeAge() {  /* Returns Age of the rds information in millis (600000= 10 min = infinity) */
   #ifdef DEBUG_RDS_MOCKUP
   return 0;
   #endif
-  if(radio_lastRdsCatchTime==0) return 600000; // obviously we never have seen anything
 
   #ifdef DEBUG_RDS_MOCKUP_TIME
-     static unsigned long prev_telegram_time=millis();
-     if(millis()-prev_telegram_time>10000) {
-        prev_telegram_time=millis();
-        return 1000; // age is 1 second
+     if(millis()-radio_lastRdsCatchTime>1000) {
+        radio_lastRdsCatchTime=millis();
+        Serial.print(F("Mocking RDS with time "));
+        Serial.println((DEBUG_RDS_MOCKUP_TIME+millis()/60000)%1440);
+        return 500; // age below rds cooldown
      } else return 600000; // Fake very high age
   #endif
-  
+
+  if(radio_lastRdsCatchTime==0) return 600000; // obviously we never have seen anything
   return(millis()-radio_lastRdsCatchTime);
 };
 
@@ -196,8 +226,12 @@ bool radio_isPlaying()  /* Radio is declared as play when playing or fading in *
 uint8_t radio_getSignalStrength()
 {
   RADIO_INFO radio_info;
+  #ifdef RADIO_PLUGGED
   radio.getRadioInfo(&radio_info);
   return radio_info.rssi; // 75 dBm is maximum value from the radio
+  #else
+  return 0 ;   // no radio in the system
+  #endif
 }
 
 int radio_getFrequency()
@@ -242,6 +276,7 @@ void catchTimeFromRDS(uint8_t hour, uint8_t minute)
 
 void displayStatus() {
       char s[12];
+      #ifdef RADIO_PLUGGED
       radio.formatFrequency(s, sizeof(s));
       Serial.print(F("Station:")); 
       Serial.println(s);
@@ -251,6 +286,9 @@ void displayStatus() {
       
       Serial.print(F("Audio:")); 
       radio.debugAudioInfo();
+      #else
+      Serial.println(F("No Radio plugged"));       
+      #endif
 }
 
 /* ################   Setup   #############################
@@ -263,13 +301,16 @@ void radio_setup()
 
   // Enable information to the Serial port
   #ifdef TRACE_RADIO
+    #ifdef RADIO_PLUGGED
     radio.debugEnable();
+    #endif
   #endif
   
   pinMode(LED_BUILTIN,OUTPUT);
   digitalWrite(LED_BUILTIN,false);
    
   // Initialize the Radio 
+  #ifdef RADIO_PLUGGED
   radio.init();
   
   // Set all radio setting to the fixed values.
@@ -285,6 +326,7 @@ void radio_setup()
   rds.attachServicenNameCallback(catchStationNameFromRDS);
 
   radio.setMute(false);
+  #endif
 
   #ifdef TRACE_RADIO
       Serial.println(F("Radio is up and running"));
@@ -302,25 +344,38 @@ void radio_loop_tick()
 {
   /* check for RDS data */
   if(bitRead(radio_operation_flags,RADIO_FLAG_RDS)) {
+         #ifdef RADIO_PLUGGED
          radio.checkRDS();
+         #endif
   }
-  digitalWrite(LED_BUILTIN,radio_operation_flags>0);
+
+  /* Set BUILTIN LED according to PLAY State */
+  digitalWrite(LED_BUILTIN,bitRead(radio_operation_flags,RADIO_FLAG_PLAY));
+  //digitalWrite(LED_BUILTIN,radio_operation_flags>0);
 
   /* fade in procedure */
   if(bitRead(radio_operation_flags,RADIO_FLAG_FADE_IN) && millis()-radio_lastFadeFrameTime>FADE_STEP_INTERVAL) {
     radio_lastFadeFrameTime=millis();
+    #ifdef RADIO_PLUGGED
     if(radio.getVolume()<FINAL_VOLUME) radio.setVolume(radio.getVolume()+1);
     else bitClear(radio_operation_flags,RADIO_FLAG_FADE_IN);
+    #else
+    bitClear(radio_operation_flags,RADIO_FLAG_FADE_IN);
+    #endif
   }
 
   /* fade out procedure */
   if(bitRead(radio_operation_flags,RADIO_FLAG_FADE_OUT) && millis()-radio_lastFadeFrameTime>FADE_STEP_INTERVAL) {
     radio_lastFadeFrameTime=millis();
+    #ifdef RADIO_PLUGGED
     if(radio.getVolume()>0) radio.setVolume(radio.getVolume()-1);
     else {
       bitClear(radio_operation_flags,RADIO_FLAG_FADE_OUT);
       radio_switchOff();
     }
+    #else
+      bitClear(radio_operation_flags,RADIO_FLAG_FADE_OUT);
+    #endif
   }
   
   #ifdef TRACE_RADIO

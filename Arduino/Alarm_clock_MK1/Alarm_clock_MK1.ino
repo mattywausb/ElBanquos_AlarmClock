@@ -66,6 +66,9 @@ MinutesOfDay_t clock_interval_alarm_time=TRIGGER_IS_OFF;
 byte clock_alarm_stopprocedure_progress=0;
 unsigned long clock_last_wakeup_stop_millis=0;  
 
+#define CLOCK_SETTINGS_DB_MEMORY_OFFSET 40
+#define CLOCK_SETTINGS_DB_ROW_COUNT 10
+
 EepromDB clockSettingsDB;
 
 struct clockSettingRecord {
@@ -91,7 +94,7 @@ void setup()
   struct clockSettingRecord previous_settings;
    
   output_setup();
-  clockSettingsDB.setupDB(0, sizeof(previous_settings), 4);
+  clockSettingsDB.setupDB(CLOCK_SETTINGS_DB_MEMORY_OFFSET, sizeof(previous_settings), CLOCK_SETTINGS_DB_ROW_COUNT);
   clock_alarm_time[0]=DEFAULT_ALARM_TIME; /* Fall back alarm */
 
   /* get settings from eeprom */
@@ -308,12 +311,18 @@ static unsigned long evaluation_time;
       if(candidate_rds_trust>=clock_rds_trust) // RDS has the better time, so take it
       {
         int sleepMinutesMemory;
+        int intervalMinutesMemory;
         bool firstTimeSinceBoot=(clock_rds_trust<RDS_TRUST_ACCEPTABLE && candidate_rds_trust >=RDS_TRUST_ACCEPTABLE );
         if(clock_sleep_stop_time!=TRIGGER_IS_OFF) sleepMinutesMemory=clock_sleep_stop_time-clock_getCurrentTime(); /* Rescue Sleeptimer */
+        if(clock_interval_alarm_time!=TRIGGER_IS_OFF) intervalMinutesMemory=clock_interval_alarm_time-clock_getCurrentTime(); /* Rescue Intervaltimer */
         clock_sync_time=candidate_sync_time;
         clock_reference_time=candidate_reference_time;
         clock_rds_trust=candidate_rds_trust;
         if(clock_sleep_stop_time!=TRIGGER_IS_OFF) clock_sleep_stop_time=(sleepMinutesMemory+clock_getCurrentTime()) % MINUTES_PER_DAY;
+        if(clock_interval_alarm_time!=TRIGGER_IS_OFF) {
+          clock_interval_alarm_time=(intervalMinutesMemory+clock_getCurrentTime()) % MINUTES_PER_DAY;
+          storeSettings();
+        }
         if(firstTimeSinceBoot && input_masterSwitchIsSet() 
              && (clock_reference_time>clock_alarm_time[0] && clock_reference_time<clock_alarm_time[0]+60)
              ) // First time after boot and alarm ad to be trigerred in the last hour
@@ -461,7 +470,9 @@ void resume_STATE_WAKEUP(){
 
 void process_STATE_WAKEUP(){
   byte alarmIndicator=0;
- if(input_snoozeGotPressed()) {  
+  
+  /* Snooze button */
+  if(input_snoozeGotPressed()) {  
     clock_alarm_stop_time=(clock_getCurrentTime()+ALARM_DURATION+SNOOZE_DURATION)%MINUTES_PER_DAY ;   
     clock_interval_alarm_time=(clock_getCurrentTime()+SNOOZE_DURATION)%MINUTES_PER_DAY;
     radio_switchOff();
@@ -473,9 +484,11 @@ void process_STATE_WAKEUP(){
    #endif
     return;
   }
-  
-  if(input_hasEncoderChangeEvent()) {enter_STATE_STOP_PROCEDURE();return;}
 
+  /* Encoder turn or select button */
+  if(input_hasEncoderChangeEvent()|| input_selectGotPressed()) {enter_STATE_STOP_PROCEDURE();return;}
+
+  /* Manage output */
   if( clock_interval_alarm_time!=TRIGGER_IS_OFF) alarmIndicator|=ALARM_INDICATOR_SNOOZE;
   if(!input_masterSwitchIsSet()) alarmIndicator|=ALARM_INDICATOR_OFF;
 
@@ -862,7 +875,7 @@ void process_STATE_DEMO(){
             demo_prev_frame_time=millis();
             if(input_getSecondsSinceLastEvent()>5) input_setEncoderValue(input_getEncoderValue()+5);
          }  
-         output_renderClockScene(input_getEncoderValue(),ALARM_INDICATOR_OFF); 
+         output_renderClockScene(input_getEncoderValue(),(input_masterSwitchIsSet()?ALARM_INDICATOR_ON :ALARM_INDICATOR_OFF)); 
 }
 
 
