@@ -13,8 +13,8 @@
 /* Parameters for Device Connection */
 
 #define LED8X8_DATAIN_PIN 12 
-#define LED8X8_CLK_PIN 11 
-#define LED8X8_LOAD_PIN 10 
+#define LED8X8_CLK_PIN 10
+#define LED8X8_LOAD_PIN 11 
 #define LED8X8_COUNT 1
 #define LED8X8_PANEL_0 0
 
