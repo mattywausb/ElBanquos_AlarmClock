@@ -24,7 +24,7 @@
 #define DEBUG_RDS_MOCKUP_TIME 7*60+54
 #endif
 
-//#define RADIO_PLUGGED
+#define RADIO_PLUGGED
 
 
 
