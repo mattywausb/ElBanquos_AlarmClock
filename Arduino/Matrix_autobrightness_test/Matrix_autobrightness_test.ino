@@ -11,14 +11,21 @@
 #endif
 
 #define LED8X8_DATAIN_PIN 12 
-#define LED8X8_CLK_PIN 4 
-#define LED8X8_LOAD_PIN 5 
+#define LED8X8_CLK_PIN 10
+#define LED8X8_LOAD_PIN 11 
 #define LED8X8_COUNT 1
 #define LED8X8_PANEL_0 0
 
 #define MINUTE_SHIFT_THRESHOLD 45
 
 
+#define INPUT_LIGHT_SENSOR_PIN A7
+
+
+byte current_display_intensity=0;
+const int sensor_to_intensity_factor=90;
+const int sensor_to_intensity_lower_base=140;
+const int sensor_to_intensity_upper_base=120;
 
 LedControl led8x8=LedControl(LED8X8_DATAIN_PIN,LED8X8_CLK_PIN,LED8X8_LOAD_PIN,LED8X8_COUNT);
 
@@ -28,9 +35,7 @@ unsigned long delaytime=250;
 #define MINUTE_FULL_CIRCLE_THRESHOLD 55
 unsigned long clock_hour_bitmap=0xFFFFFFFF;
 unsigned int clock_minute_bitmap=0xFFFF;
-byte display_intensity=0;
-int sensor_to_intensity_factor=64;
-int lightBaseValue=320;
+
 
 void setup() {
  #ifdef TRACE_ON 
@@ -44,7 +49,7 @@ void setup() {
    */
   led8x8.shutdown(LED8X8_PANEL_0,false);
   /* Set the brightness to a medium values */
-  led8x8.setIntensity(LED8X8_PANEL_0,display_intensity);
+  led8x8.setIntensity(LED8X8_PANEL_0,current_display_intensity);
   /* and clear the display */
   led8x8.clearDisplay(LED8X8_PANEL_0);
 
@@ -199,19 +204,33 @@ void loop() {
 
   /* measure light */
   int lightValue;
-  lightValue=analogRead(A6);
-  int newDisplayIntensity=(lightValue-lightBaseValue)/sensor_to_intensity_factor;
+  lightValue=analogRead(INPUT_LIGHT_SENSOR_PIN);
+  int newDisplayIntensity=(lightValue-sensor_to_intensity_lower_base)/sensor_to_intensity_factor;
   if(newDisplayIntensity>15) newDisplayIntensity=15;
   if(newDisplayIntensity<0) newDisplayIntensity=0;
   #ifdef TRACE_LIGHTSENSOR
-    Serial.print(lightValue);Serial.print(" -> \t");
-    Serial.println(newDisplayIntensity);
+    Serial.print(lightValue);
+    Serial.print(" -> \t lower="); Serial.print(newDisplayIntensity);
   #endif
-  if(newDisplayIntensity!=display_intensity) 
+  if(newDisplayIntensity>current_display_intensity) 
   {
-    display_intensity=newDisplayIntensity;
-    led8x8.setIntensity(LED8X8_PANEL_0,display_intensity); 
+    current_display_intensity=newDisplayIntensity;
+    led8x8.setIntensity(LED8X8_PANEL_0,current_display_intensity); 
   }
+  newDisplayIntensity=(lightValue-sensor_to_intensity_upper_base)/sensor_to_intensity_factor;
+  if(newDisplayIntensity>15) newDisplayIntensity=15;
+  if(newDisplayIntensity<0) newDisplayIntensity=0;
+  #ifdef TRACE_LIGHTSENSOR
+    Serial.print(" -> \t upper="); Serial.print(newDisplayIntensity);
+  #endif
+  if(newDisplayIntensity<current_display_intensity) 
+  {
+    current_display_intensity=newDisplayIntensity;
+    led8x8.setIntensity(LED8X8_PANEL_0,current_display_intensity); 
+  }
+  #ifdef TRACE_LIGHTSENSOR
+    Serial.print(" -> \t current="); Serial.println(current_display_intensity);
+  #endif
 
   /* logic*/
   minutes_of_the_day+=5; 

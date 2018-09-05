@@ -166,6 +166,8 @@ void loop() {
     return;
   }
 
+  /* Light Sensor logic */
+  output_adjust_autobrightness(input_get_light_sensor_value());
   
   /* UI logic */
   switch (clock_state) {

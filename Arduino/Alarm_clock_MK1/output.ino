@@ -8,6 +8,7 @@
 //#define TRACE_OUTPUT_SLEEP_BITSET 1
 //#define TRACE_OUTPUT_RING3_BITSET 1
 //#define TRACE_OUTPUT_NUMBER 
+//#define TRACE_AUTOBRIGHTNESS 
 #endif
 
 /* Parameters for Device Connection */
@@ -35,6 +36,10 @@ byte flag_indicator_bitmap=0x00;
 
 #define ALARM_INDICATOR_2_4_MASK B00100100
 
+
+const int sensor_to_intensity_factor=64;
+const int sensor_to_intensity_lower_base=140;
+const int sensor_to_intensity_upper_base=120;
 
 LedControl led8x8=LedControl(LED8X8_DATAIN_PIN,LED8X8_CLK_PIN,LED8X8_LOAD_PIN,LED8X8_COUNT);
 
@@ -646,19 +651,51 @@ void output_renderDemoRampupMeasures()
   }
 }
 
+void output_adjust_autobrightness(int lightMesurement)
+{
+  static int current_display_intensity=0;
+
+  /* Check if lower border has climbed over current value */
+  int newDisplayIntensity=(lightMesurement-sensor_to_intensity_lower_base)/sensor_to_intensity_factor;
+  if(newDisplayIntensity>15) newDisplayIntensity=15;
+  if(newDisplayIntensity<0) newDisplayIntensity=0;
+  #ifdef TRACE_AUTOBRIGHTNESS
+    Serial.print(F("TRACE_AUTOBRIGHTNESS: "));
+    Serial.print(lightMesurement);
+    Serial.print(F(" ->\t lower=")); Serial.print(newDisplayIntensity);
+  #endif
+  if(newDisplayIntensity>current_display_intensity) 
+  {
+    current_display_intensity=newDisplayIntensity;
+    led8x8.setIntensity(LED8X8_PANEL_0,current_display_intensity); 
+  }
+
+  /* Check if upper border has fallen below current value */
+  newDisplayIntensity=(lightMesurement-sensor_to_intensity_upper_base)/sensor_to_intensity_factor;
+  if(newDisplayIntensity>15) newDisplayIntensity=15;
+  if(newDisplayIntensity<0) newDisplayIntensity=0;
+  #ifdef TRACE_AUTOBRIGHTNESS
+    Serial.print(F("\t upper=")); Serial.print(newDisplayIntensity);
+  #endif
+  if(newDisplayIntensity<current_display_intensity) 
+  {
+    current_display_intensity=newDisplayIntensity;
+    led8x8.setIntensity(LED8X8_PANEL_0,current_display_intensity); 
+  }
+  #ifdef TRACE_AUTOBRIGHTNESS
+    Serial.print(F("\t current=")); Serial.println(current_display_intensity);
+  #endif
+  
+}
+
 void output_setup() {
   /*
    The MAX72XX is in power-saving mode on startup,
    we have to do a wakeup call
    */
   led8x8.shutdown(LED8X8_PANEL_0,false);
-  /* Set the brightness to a medium values */
-  led8x8.setIntensity(LED8X8_PANEL_0,0);
-  /* and clear the display */
+  output_adjust_autobrightness(500);
   led8x8.clearDisplay(LED8X8_PANEL_0);
-
-  //output_renderUint32Time_TEST();
-  //output_renderDemoRampupMeasures();
 
   output_sequence_acknowlegde();
   output_sequence_escape();

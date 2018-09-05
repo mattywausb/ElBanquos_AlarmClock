@@ -13,6 +13,9 @@
 
 #define PORT_MAIN_SWITCH 8
 
+
+#define INPUT_LIGHT_SENSOR_PIN A7
+
   const byte switch_pin_list[]={7,    // ENCODER A
                               8,    // ENCODER B
                               9,    // BUTTON A SELECT ( ENCODER PUSH)
@@ -153,6 +156,11 @@ void input_setEncoderRange(int rangeMin,int rangeMax,int stepSize,int startValue
   if(startValue>=input_encoder_rangeMin 
      && startValue<=input_encoder_rangeMax) input_encoder_value=startValue;
     else                                    input_encoder_value=input_encoder_rangeMin;
+}
+
+int input_get_light_sensor_value() 
+{
+  return analogRead(INPUT_LIGHT_SENSOR_PIN);
 }
 
 /* ********************************************************************************************************** */
