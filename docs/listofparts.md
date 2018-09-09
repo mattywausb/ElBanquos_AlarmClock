@@ -6,7 +6,7 @@ This is hopefully the list of all parts I needed. For better orientation it is d
 * Wires, double wires and ribbon cables
 * 2 port contact terminal or 9v power socket
 
-# core processing element 
+# core processing elements 
 (Needed to test the software)
 * arduino nano
 * SI 470x Radio Module
