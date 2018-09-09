@@ -2,6 +2,9 @@
 An Arduino based radio alarm clock with a unqie display method and an efficient user interface
 ![Overview Picture](docs/alarmclock_main_show.jpg "The clock and my glasses")
 
+* [Bedienungsanleitung (German Manual)](docs/manual-de.md)
+* [Manual](docs/manual-en.md)
+
 # Introduction
 Actual alarm clocks are often not designed very well, because they try to be cheap and very multifunctional.
 I want to create an alarm clock, that is optimized by enhanceing the essential features an reducing all gimmicks not necessary for the job.
