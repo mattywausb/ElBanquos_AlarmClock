@@ -2,8 +2,8 @@
 An Arduino based radio alarm clock with a unique display method and an efficient user interface
 ![Overview Picture](docs/alarmclock_main_show.jpg "The clock and my glasses")
 
-* [Bedienungsanleitung (German Manual)](https://mattywausb.github.io/ElBanquos_AlarmClock/docs/manual-de.md)
-* [Manual](https://mattywausb.github.io/ElBanquos_AlarmClock/docs/manual-en.md)
+* [Bedienungsanleitung (German Manual)](https://mattywausb.github.io/ElBanquos_AlarmClock/docs/manual-de.html)
+* [Manual](https://mattywausb.github.io/ElBanquos_AlarmClock/docs/manual-en.html)
 
 # Introduction
 Actual alarm clocks are often not designed very well, because they try to be cheap and very multifunctional.
