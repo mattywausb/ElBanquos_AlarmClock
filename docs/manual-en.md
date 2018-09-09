@@ -1,17 +1,17 @@
-# El Banquos Radiowecker - Bedienungsanleitung
+# El Banquos Alarm Clock - Manual
 
-Mangels eines ausgereiften Produktes in den hiesigen Elektronikmärkten habe ich mir einen eigenen Radiowecker gebaut,
-der folgende Eigenschaften in sich vereint:
+Sinc I could not find a sutable alarm clock in the stores I decided to build my own with the following features:
+* easy adjustable alarm time
+* fading volume when alarm starts
+* compact display design that is readable by shortsighted person (me)
+* adjusted and display brightness that can not be noticed with closed eyes
+* self adjusting time by using radio data signal
+* nap function for taking a shot nap at daytime independendtly from alarm setting
+* deactivating alarm cannot be an accident
+* Radio station and Volume cannot be changed by accident
 
-* Leicht einstellbare Weckzeit (Vor- und Zurückstellbar)
-* "Einblenden" der Radiolautstärke zur Weckzeit (statt brachialem "Radio an")
-* Eine Anzeige die ich auch ohne Brille(Kurzsichtig) ablesen kann, aber nicht gleich riesig ist
-* "entspannte" Zeitanzeige (Ich brauche es nicht auf die Minute genau) 
-* Anzeige ist nur so hell, wie gerade nötig und nicht mit geschlossenen Augen warnehmbar
-* Stellt sich selbst mittels der im Radiosignal verfügbare Zeitinformation (RDS)
-* Nickerchenfunktion (Radio an nach definiertem Interval (z.B. 20 Min für PowerNap)
-* Deaktivieren des Alarms kann nicht aus Versehen passieren
-* Sender und Lautstärke können nicht aus Versehen verstellt werden
+To be translated later:
+----
 
 # Bestandteile des Weckers
 ![Bild](Part_Description.png "Teilebezeichnung")
