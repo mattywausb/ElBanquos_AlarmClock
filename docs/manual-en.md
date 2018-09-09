@@ -67,11 +67,13 @@ The middle of the display is used to indicate the progess of time in one hour. T
 * 25-40 minutes: additional 2 Pixel below the middle
 * 40-55 minutes: additional 2 Pixel left to the middle
 ## Examples
-|Display|Time   |Display|Time    |
-|-------|-------|-------|--------|
-|![display](time05-00.jpg "05:00")| 5:00 |![display](time05-05.jpg "05:05")| 5:05 |
-|![display](time05-15.jpg "05:15")| 5:15 |![display](time05-30.jpg "05:30")| 5:30 |
-|![display](time05-45.jpg "05:45")| 5:45 |![display](time06-00.jpg "06:00")| 6:00 |
+
+![display](time05-00.jpg "05:00")| 5:00 
+![display](time05-05.jpg "05:05")| 5:05 
+![display](time05-15.jpg "05:15")| 5:15 
+![display](time05-30.jpg "05:30")| 5:30 
+![display](time05-45.jpg "05:45")| 5:45 
+![display](time06-00.jpg "06:00")| 6:00 |
 
 It takes 2 or 3 days to get used to it but then gets very intuitive.
 
@@ -83,10 +85,11 @@ The alarm time display is nearly similar to the time display with the following 
 * the time shown is the time chosen (no 5 minute offset)
 
 ## Examples
-|Display|Time   |Display|Time    |
-|-------|-------|-------|--------|
-|![display](alarm07-00.jpg "07:00 ")| 7:00 |![display](alarm07-15.jpg "07:15 ")| 07:15 |
-|![display](alarm07-25.jpg "07:25 ")| 7:25 |![display](alarm07-30.jpg "07:30 ")| 07:30 |
+
+![display](alarm07-00.jpg "07:00 ")| 7:00 
+![display](alarm07-15.jpg "07:15 ")| 7:15 
+![display](alarm07-25.jpg "07:25 ")| 7:25 
+![display](alarm07-30.jpg "07:30 ")| 7:30 
 
 # Operations
 A lot of "trivial"operations are not translated yet. Instead I focussed the special ones.
