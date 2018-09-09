@@ -9,90 +9,111 @@ Sinc I could not find a sutable alarm clock in the stores I decided to build my 
 * nap function for taking a shot nap at daytime independendtly from alarm setting
 * deactivating alarm cannot be an accident
 * Radio station and Volume cannot be changed by accident
+# Elements of the clock
+![Bild](Part_Description.png "Teilebezeichnung")
+
+1. 8x8 LED Dot Matrix display
+2. Snooze Button
+3. Selection Knob
+4. Wakeup function switch
+5. USB port of the Arduino for Softwareupdates
+6. Antenna cable
+7. Volume Control
+8. Cable to power supply
+9. Speaker
+10. Light sensor
+
+# Quickstart
+1. Plug in the Power Supply -> The Display should show a short "Acknowledge" Symbol and the clock will start with the rds data scanning display (more details on this later). Since rds time data is usially send only once a minute and the clock needs at least 10 consecutive plausible time telegrams, this will take at least 10 Minutes and will become  longer if the signal is weak or disturbed. Nevertheless it is possible to set the alarm time without having the correct time.
+2. Start alarm time selection by pushing the selection knob(3) 
+3. Turn the selection knob(3) to adjust the alarm time (how to read the display, see next chapter)
+4. Push selection knob(3) to store the selected alarm time -> The Display shows a short "Acknowledge" Symbol 
+5. Check that the Wakeup function switch (4) is set to 1
+
+The alarm clock will play the radio at the given time.
+* to pause the alarm for 10 minutes presse the Snooze Button(1) -> radio will switch of and indicate the snooze mode with two blinking dots.
+* to stop the alarm turn the knob (3)->The display shows an outer and inner square. The outer square that starts disappearing while turning the knob. When the outer square is vanished, the alarm is stopped.
+
+If there is no interaction for 60 minutes, the radio will stop playing by itself.
+
+* to switch off the wake up function for the upcoming days, set the wakup function switch(4) to 0 
+
+**Notice:** An active alarm or snoozed alarm will *not be stopped by switching the wakup function switch*. Only the "turning knob procedure" will stop the current alarm.
+
+# Time display
+The time display is designed to be even readable for moderate shortsighted persons when lying with the clock on the nightstand (1-2m). Since numerc digits (especially the crutial 5 and 6 in the morning) are hard to tell from each other the concept uses a pure graphical approach
+
+![time1200](time12-00.jpg "12:00 Uhr")
+
+The display consists of two elements:
+* The hour frame (with a 1 hour indication gap and a 3 hour indication "counter gap")
+* The quater hour circle
+Since healthy waking up should be done in a more relaxed manner the time resolution is only 15 minutes and the display shows the current time five minutes in advance (e.g. it shows the 12:00 pattern already at 11:55). This offset is only used for the time display. Selection of alarm time and start of the alarm is at the precise moment. 
+
+## The hour frame
+The hour frame is displayed using the border of the matrix display. A small gap of 2 pixels indicates the current hour at the same position as known on analog watches. (12 at top, 3 at the mid of right side, 6 at bottom, 9 at the mid of the left side)
+20 Minutes befor the upcoming next hour, the gap will move one pixel forward to indicate the progress.
+
+Only the frame line with the gap an its neighbours are shown. Opposite line to the gap is not lit. So by only reading the orientation of the three lit lines of the frame it is possibile to distinguish the 3 hour blocks 11-1, 2-4, 5-7, 8-11. This provides roug readablity for even more distance.
+
+### Wakup function switch indicator
+When the wakup function is *switched off*, this will be indicated by placing a *one pixel gap* in each of the side lines. 
+
+## Quater hour circle
+The middle of the display is used to indicate the progess of time in one hour. This is done as follows:
+* -5 minutes to 5 minutes to the whole hour: complete circle
+* 5 minutes to 10 minutes: no marking in the middle
+* 10 - 25 minutes: 2 Pixels right to the middle
+* 25-40 minutes: additional 2 Pixel below the middle
+* 40-55 minutes: additional 2 Pixel left to the middle
+## Examples
+|Display|Time   |Display|Time    |
+|-------|-------|-------|--------|
+|![display](time05-00.jpg "05:00")| 5:00 |![display](time05-05.jpg "05:05")| 5:05 |
+|![display](time05-15.jpg "05:15")| 5:15 |![display](time05-30.jpg "05:30")| 5:30 |
+|![display](time05-45.jpg "05:45")| 5:45 |![display](time06-00.jpg "06:00")| 6:00 |
+
+It takes 2 or 3 days to get used to it but then gets very intuitive.
+
+# Alarm time display
+The alarm time display is nearly similar to the time display with the following modifications:
+* Minutes are displayed as 5 minutes per pixel in a inner square
+* Hours between noon and midnoght (12-23 aka. p.m.) are indicated by lighint the for middle pixels in the display
+* All four sides of the outer square are lit or flashing
+* the time shown is the time chosen (no 5 minute offset)
+
+## Examples
+|Display|Time   |Display|Time    |
+|-------|-------|-------|--------|
+|![display](alarm07-00.jpg "07:00 ")| 7:00 |![display](alarm07-15.jpg "07:15 ")| 07:15 |
+|![display](alarm07-25.jpg "07:25 ")| 7:25 |![display](alarm07-30.jpg "07:30 ")| 07:30 |
+
+# Operations
+A lot of "trivial"operations are not translated yet. Instead I focussed the special ones.
+
+## Nap function
+For taking a shot nap, you can set up an interval after the alarm will start. This function works independently of the normal alarm time and the wake up switch. To activate the nap function:
+![nap](nap20.jpg "Nap display 20 min")
+1. press snooze button(2) -> The display will show only an "Minute display" starting with 4 Pixel (20 minutes with 5 Minutes per pixel)
+2. Turn the knob(3) to adjust the length of the interval in 5 minute steps. When turning over 1 hour, a second square will be drawn until you reach the maximum of 2 hours
+3. Press the knob(3) (or leave the clock alone for 10 seconds) to activate the function -> after showing an acknowledgement the display will switch back to the normal Clock display but will additionalli  flash two pixels  to indicate the active nap function
+
+The the time is up, the clock will start the normal alarm procedure (with snooze function and switch off procedure).
+
+## Check / Change remaining nap time
+To check the remaining nap time, when in nap function is active:
+1. Press the snooze button-> Remaining nap time will be displayed
+2. You may change the time by turning the knob
+
+## Cancel nap function before alarm
+Cancling the nap function is as easy as canceling the normal alarm (since it is internally a very long snooze mode).
+1. turn the knob (3)->The display shows an outer and inner square. The outer square starts disappearing while turning the knob further. When the outer square is vanished, the nap function is stopped.
 
 To be translated later:
 ----
 
-# Bestandteile des Weckers
-![Bild](Part_Description.png "Teilebezeichnung")
-1. 8x8 LED Punkmatrix Display zur Anzeige aller Informationen
-2. Schlummer Taste
-3. Drehregler und Taste Einstellung und Bestätigung verschiedener Funktionen
-4. Weckfunktionschalter 
-5. USB Port des Arduino für Softwareupdates
-6. "Wurfantenne"
-7. Lauststärkeregler
-8. Kabelausgang zum Netzteil
-9. Lautsprecher
-10. Lichtsensor
-
-# Inbetriebnahme und Schnellstart
-1. Wecker an das Stromnetz anschließen -> Auf dem Display erscheit kurz ein "Bestätigungssymbol" und danach die "Zeitsuchanzeige". Der Wecker 
-wartet nun auf Zeitinformationen im Radiosignal. Da diese nur 1 mal pro Minute gesendet werden und der Wecker
-außerdem mindestens auf 10 plausible Werte waret, wird dieser Vorgang mindestens 10 Minuten dauern. Trotzdem kann jetzt schon die Weckzeit eingestellt werden
-2. Einstellen der Weckzeit einleiten durch einmaliges Drücken auf den Drehschalter
-3. Drehregler vor- oder zurückdrehen bis die gewünschte Weckzeit angezeigt wird (siehe gleich, lesen der Zeitanzeige)
-4. Drehregler drücken um die gewählte Zeit als Weckzeit zu speichern -  Auf dem Display erscheit kurz ein "Bestätigungssymbol" 
-und danach die Zeitanzeige bzw. die Zeitsuchanzeige
-5. Weckfunktionschalter auf 1 stellen  -> In der Zeitanzeige wird der Status entsprechend angezeigt.
-
-Der Wecker schaltete sich nun zu der gesetzten Uhrzeit ein.
-* Um den Alarm für 10 Minuten zu pausieren, Schlummer Taste drücken -> Radio geht aus, Im Display blinken zwei Punkte. Das Radio schaltet sich nach 10 Minuten wieder an
-* Um den Alarm abzustellen, den Drehregler drehen-> Auf dem Display wird mit der Drehbewegung ein Quadrat gezeichnet. 
-Hat man weit geng gedreht um das Quadrat zu komplettieren, wird der Alarm beendet
-* Um zu verhindern, das der Alarm am nächsten Tag erneut aktiv wird, muss der Alarmschalter auf 0 gestellt werden.
-
-Hinweis: Ein aktiver Alarm wird durch abschalten des Weckfunktionschalters nicht beendet. Dazu ist die beschriebene Prozedur  mit dem Drehregler notnwedig
-Alternativ schaltet sich das Radio nach 1 Stunde automatisch ab.
 
 
-# Die Uhrzeitanzeige
-Die Zeitanzeige wurde so gestaltet, dass sie in der Nacht auch von einem kurzsichtigen Menschen ohne Brille mit moderatem Abstand gelesen werden kann. 
-Sie ist deshalb mit einfachen Linienmustern konzipiert, die für alle Zeiteinheiten gut differenzierbar sind. 
-
-![time1200](time12-00.jpg "12:00 Uhr")
-
-Die Anzeige teilt sich in zwei Elemente:
-* Stundenrahmen (mit einer 1 Stunden und 3 Stunden Lücke)
-* Viertelstundenkreis
-Da die Zeit insgesamt mit einer Genauigkeit von nur 15 Minuten angezeigt wird, ist sie gegenüber der präzisen Zeit um 5 Minuten
-vorversetzt, d.h. die volle Stunde wird 5 Minuten vor dem erreichen der vollen Stunde angezeigt. 
-Der gleiche Versatz für alle weiteren Abschnitte der Stunde. (Dieser Verstatz gilt nur für die Echtzeitanzeige. Die Einstellung der Alarmzeit hat eine exakte Anzeige)
-## Der Stundenrahmen
-Der Stundenrahmen wird am äußeren Rand des Displays angezeigt. Eine kleine Lücke aus 2 Punkten zeigt die aktuelle Stunde an, analog wie bei einer Zeigeruhr (12 Uhr oben mittig, 3 uhr rechts mittig usw).
-
-Ab 20 Minuten vor der Folgestunde rückt diese Lücke um ein Punkt vor, um die relative Nähe
-zur kommenden Stunde anzuzeigen. 
-
-Die Rahmenkante gegnüber der Stundenlücke wird komplett offen gelassen (große Lücke). Dadurch ist eine sehr grobe Einschätzung der Zeit ohne Erkennen der kleinen Lücke möglich. Gerade die allgemein "weckkrittischen" Stunden 5-7 Uhr sind damit gut von den davor liegenden Stunden 11-1 und 2-4 unterscheidbar.
-
-Solange der Alarm über den Schalter **abgeschaltet** ist, wird dies durch **zwei Lücken** in den "seitlichen" Rahmenkanten erkennbar gemacht.
-## Viertelstundenkreis
-In der Mitte des Displays wird der Fortschritt innerhalb einer Stunde in 15 Minutenschritten angezeigt.
-* -5 Minuten bis + 5 Minuten zur vollen Stunde: Voller kreis
-* 5 Minuten- 10 Minuten: keine Markierung in der Mitte
-* 10 - 25 Minuten: 2 Pixel rechts der Mitte
-* 25-40 Minuten: zusätzlich 2 Pixel unterhalb der Mitte
-* 40-55 Minuten: zusätzlich 2 Pixel links der Mitte
-## Beispiele
-|Display|Zeit   |Display|Zeit    |
-|-------|-------|-------|--------|
-|![display](time05-00.jpg "05:00 Uhr")| 5:00 Uhr|![display](time05-05.jpg "05:05 Uhr")| 5:05 Uhr|
-|![display](time05-15.jpg "05:15 Uhr")| 5:15 Uhr|![display](time05-30.jpg "05:30 Uhr")| 5:30 Uhr|
-|![display](time05-45.jpg "05:45 Uhr")| 5:45 Uhr|![display](time06-00.jpg "06:00 Uhr")| 6:00 Uhr|
-
-
-# Die Weckzeitanzeige
-Die Weckzeitanzeige ist ähnlich wie die Uhrzeitanzeige abzulesen. Es gibt folgende Unterschiede:
-* Minuten werden in mit einem kleinen Quadreat(4x4) in der Mitte des Displays dargestellt. Jeder Punkt des Quardrates steht für 5 Minuten. Der volle Kreis steht für die volle Stunde.
-* Uhrzeiten am Nachmittag und Abend  (12-23 Uhr) werden durch einen ausgefüllten Mittelpunkt der Anzeige kenntlich gemacht.
-* Die sonst offene Kante des Stundenrahmens ist geschlossen (Anzeige der Weckzeit) oder blinkt (Einstellung der Weckzeit)
-* Die angezeigte Zeit entspricht exakt dem Wert, der gerade gewählt wurde.
-## Beispiele
-|Display|Weckzeit   |Display|Weckzeit    |
-|-------|-------|-------|--------|
-|![display](alarm07-00.jpg "07:00 Uhr")| 7:00 Uhr|![display](alarm07-15.jpg "07:15 Uhr")| 07:15 Uhr|
-|![display](alarm07-25.jpg "07:25 Uhr")| 7:25 Uhr|![display](alarm07-30.jpg "07:30 Uhr")| 07:30 Uhr|
 
 
 # Bedienung
@@ -129,23 +150,7 @@ Um einen laufenden  oder pausierten Alarm zu beenden:
 2. Drehregler weiter drehen bis das Quadrat verschwunden ist -> der Alarm wird beendet
 ![alm of procedure display](almoff01 "Anzeige zum ausschalten des laufenden Alarms")
 
-## Nickerchenfunktion
-Für ein Nickerchen, kann der Wecker unabhängig von der Weckzeit auf ein Intervall eingestellt werden, nach dem er dann die Weckfunktion aktiviert.
-1. Schlummer Taste drücken -> Auf dem Display erscheint ein  "Minutenquadrat", voreingestellt auf 20 Minuten(=4 Punkte) (Be schon laufender Nickerchenfunktion wird die verbleibenden Restzeit angezeigt)
-2. Mit dem Drehregler kann die Dauer in 5 Minutenschritten zwischen 0 und 120 Minuten(großes komplettes Quadrat) geändert werden 
-3. Mit drücken auf den Drehregler (oder aber nach 10 Sekunden ohne Bedienhandlung) wird die gewählte Dauer bestätigen -> Bestätigtungshaken erscheint und danach die Uhrzeit wobei zwei Punkte in der offenen Kante des Stundenrahmens blinken
 
-Der Wecker alarmiert nach Ablauf der eingestellten Zeit.
-
-## Nickerchenfunktion ausschalten
-Um eine laufende Nickerchenfunktion abzuschalten
-1. Drehregler drehen-> Auf dem Display erscheint mit der Drehbewegung ein Quadrat 
-2. Drehregler weiter drehen bis das Quadrat komplettiert ist ->  die Nickerchenfunktion wird abgeschaltet (identisch mit Alarm beenden)
-
-Alternativ;
-1. Schlummer Taste drücken -> Auf dem Display erscheint ein  "Minutenquadrat",  mit der noch verbleibenden Laufzeit
-2. Mit dem Drehregler die Zeit auf 0 verringern
-3. Mit drücken auf den Drehreger wird die Nickerchenfunktion abgeschaltet.
 
 ## Einschlaffunktion / Radio an
 Über die Schlaffunktion kann das Radio spontan für eine definierte Zeit eingeschaltet werden.
@@ -218,33 +223,7 @@ Wird länger keine Bedienung vorgenommen, wird wieder die Normalzeit angezeigt.
 
 Mit der Schlummertaste kann die Demo Funktion aktiv beendet werden.
 
-# Hintergründe für das Design
-## Anzeige
-Die übliche Anzeige mit Ziffern, hat den Nachteil, dass einige Zahlen nur schwer unterscheidbar sind, wenn man nicht über die komplette
-Sehschärfe verfügt. So ist eine 5 schwer von eine 6 zu unterscheiden (was am Morgen den Unterschied zwischen Weiterschlafen und Panik 
-ausmachen kann)
-Analoge Uhrenziffernblätter sind diesbezüglich einfacher, haben aber immer noch das Problem der eindeutigen Orientierung. Eine leichte 
-Kopfneigung kann aus einer 5:20  eine 4:15 machen (oder umgekehrt).
-Das jetzige Konzept löst beide Probleme:
-* Aufgrund der Quadratischen Form ist für eine Lageverwechslung eine Fehleinschätzung von 45 Grad notwendig
-* Die Anzeige der Viertelstunden ist bietet von 15-35 Minuten eine zusätzliche Richtungsorientierung
 
-Beim Ausprobieren verschiedener Darstellungen hat sich außerdem gezeigt, dass es unumgänglich ist, dem Nutzer immer eine Orientierung bzgl
-der Gesamtgröße des Disyplays zu geben. Auch hat sich gezeigt, dass eine Unterbrechung von Linien immer 
-zu Ableseproblemen führt. Daraus ergab sich am Ende der Ansatz mit dem Rahmen.
-
-## Anordnung der Bedienelemente
-* Die Hauptbedienelmente liegen oben und werden vertikal betätigt, damit der Wecker beim Betätigen nicht aus versehen verschoben wird bzw. mit einer zweiten Hand festgehalten werden muss
-* der Lauststärkeregler liegt hinten, da er nach der optimalen Einstellung nicht aus Versehen verstellt werden soll
-* Die Hauptbedienelmente liegen hintereinander, entsprechend ihrer Priorität der Nutzung beim Wecken. Schlummer zuerst, Alarmzeit einstellen und Alarm beenden als nächstes, Alarm aus/an als drittes
-
-## Bedienungsabfolge
-Die Bedienabfolge ist so gestaltet, dass die Bedienung beim zu Bett gehen(auch für ein Nickerchen) so wenig Geräusche wie möglich verursacht um "akustische Trigger", die den Körper wieder aufwecken, zu vermeiden.
-Akustische Trigger sind: Drücken des Drehreglers, aktivierung des Radios. 
-
-* Bedienungen ohne Geräusche: Alarmzeit anschauen, Nickerchenzeit setzen, Alarm pausieren, Alarm beenden
-, Sender prüfen/ändern
-* Bedienung mit 1 Klick: Alarmzeit ändern,Radiosender wählen
 
 
 
