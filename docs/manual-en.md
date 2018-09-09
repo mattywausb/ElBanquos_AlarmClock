@@ -1,6 +1,6 @@
 # El Banquos Alarm Clock - Manual
 
-Sinc I could not find a sutable alarm clock in the stores I decided to build my own with the following features:
+Since I could not find a suitable alarm clock in the stores I decided to build my own with the following features:
 * easy adjustable alarm time
 * fading volume when alarm starts
 * compact display design that is readable by shortsighted person (me)
