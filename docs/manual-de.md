@@ -16,9 +16,9 @@ der folgende Eigenschaften in sich vereint:
 # Bestandteile des Weckers
 ![Bild](Part_Description.png "Teilebezeichnung")
 1. 8x8 LED Punkmatrix Display zur Anzeige aller Informationen
-2. Schlummer Taster
-3. Drehregler und Taster Einstellung und Bestätigung verschiedener Funktionen
-4. Alarmschalter zum grundsätzlichen aktivieren der Alarmfunktion
+2. Schlummer Taste
+3. Drehregler und Taste Einstellung und Bestätigung verschiedener Funktionen
+4. Weckfunktionschalter 
 5. USB Port des Arduino für Softwareupdates
 6. "Wurfantenne"
 7. Lauststärkeregler
@@ -34,15 +34,15 @@ außerdem mindestens auf 10 plausible Werte waret, wird dieser Vorgang mindesten
 3. Drehregler vor- oder zurückdrehen bis die gewünschte Weckzeit angezeigt wird (siehe gleich, lesen der Zeitanzeige)
 4. Drehregler drücken um die gewählte Zeit als Weckzeit zu speichern -  Auf dem Display erscheit kurz ein "Bestätigungssymbol" 
 und danach die Zeitanzeige bzw. die Zeitsuchanzeige
-5. Alarmschalter auf 1 stellen  -> In der Zeitanzeige wird der Status entsprechend angezeigt.
+5. Weckfunktionschalter auf 1 stellen  -> In der Zeitanzeige wird der Status entsprechend angezeigt.
 
 Der Wecker schaltete sich nun zu der gesetzten Uhrzeit ein.
-* Um den Alarm für 10 Minuten zu pausieren, Schlummer Taster drücken -> Radio geht aus, Im Display blinken zwei Punkte. Das Radio schaltet sich nach 10 Minuten wieder an
+* Um den Alarm für 10 Minuten zu pausieren, Schlummer Taste drücken -> Radio geht aus, Im Display blinken zwei Punkte. Das Radio schaltet sich nach 10 Minuten wieder an
 * Um den Alarm abzustellen, den Drehregler drehen-> Auf dem Display wird mit der Drehbewegung ein Quadrat gezeichnet. 
 Hat man weit geng gedreht um das Quadrat zu komplettieren, wird der Alarm beendet
 * Um zu verhindern, das der Alarm am nächsten Tag erneut aktiv wird, muss der Alarmschalter auf 0 gestellt werden.
 
-Hinweis: Ein aktiver Alarm wird durch Betätitigung des Alarmschalters nicht beendet. Dazu ist die Bedienung mit dem Drehknopf notnwedig
+Hinweis: Ein aktiver Alarm wird durch abschalten des Weckfunktionschalters nicht beendet. Dazu ist die beschriebene Prozedur  mit dem Drehregler notnwedig
 Alternativ schaltet sich das Radio nach 1 Stunde automatisch ab.
 
 
@@ -88,6 +88,12 @@ Die Weckzeitanzeige ist ähnlich wie die Uhrzeitanzeige abzulesen. Es gibt folge
 * Uhrzeiten am Nachmittag und Abend  (12-23 Uhr) werden durch einen ausgefüllten Mittelpunkt der Anzeige kenntlich gemacht.
 * Die sonst offene Kante des Stundenrahmens ist geschlossen (Anzeige der Weckzeit) oder blinkt (Einstellung der Weckzeit)
 * Die angezeigte Zeit entspricht exakt dem Wert, der gerade gewählt wurde.
+## Beispiele
+|Display|Weckzeit   |Display|Weckzeit    |
+|-------|-------|-------|--------|
+|![display](alarm07-00.jpg "07:00 Uhr")| 7:00 Uhr|![display](alarm07-15.jpg "07:15 Uhr")| 07:15 Uhr|
+|![display](alarm07-25.jpg "07:25 Uhr")| 7:25 Uhr|![display](alarm07-30.jpg "07:30 Uhr")| 07:30 Uhr|
+
 
 # Bedienung
 
@@ -95,7 +101,7 @@ Die Weckzeitanzeige ist ähnlich wie die Uhrzeitanzeige abzulesen. Es gibt folge
 Wenn sich das der Wecker im Ruhezustand befindet (Anzeige der Uhrzeit, keine laufender Alarm) kann man sich die eingestellte Weckzeit wie folgt anzeigen lassen:
 1. Drehregler drehen -> Die Weckzeit wird angezeigt, nach einer kurzen Wartezeit springt die anzeige selbständig zurück auf die Uhrzeit
 
-Alternativ kann mit der Schlummer Taster unverzüglich auf die Uhrzeit zurückgeschaltet werden
+Alternativ kann mit der Schlummer Taste unverzüglich auf die Uhrzeit zurückgeschaltet werden
 
 ## Weckzeit stellen
 Wenn sich der Wecker im Ruhezustand befinden (Anzeige der Uhrzeit oder Weckzeit, kein laufender Alarm) kann die Weckzeit wie folgt eingestellt werden:
@@ -103,21 +109,25 @@ Wenn sich der Wecker im Ruhezustand befinden (Anzeige der Uhrzeit oder Weckzeit,
 2. Drehregler vor oder zurückdrehen bis die gewünschte Weckzeit angezeigt wird 
 3. Drehregler drücken oder 10 Sekunden keine Bedienung vornehmen um die gewählte Zeit als Weckzeit festzulegen-->  Auf dem Display erscheint kurz ein "Bestätigungssymbol" und danach die Zeitanzeige bzw. die Zeitsuchanzeige
 
-Alternativ kann mit dem Schlummer Taster die Änderung der Weckzeit abgebrochen werden.
+Alternativ kann mit dem Schlummer Taste die Änderung der Weckzeit abgebrochen werden.
 
-## Alarmfunktion ein/ausshalten
-Die grundsätzliche Aktivierung der Alarmzeit erfolgt mit dem Alarmschalter. Damit der Alarm bei Erreichen der Weckzeit aktiviert wird, muss dieser Schalter auf "1" gestellt sein. Ist er auf "0" gestellt und der Alarm damit deaktiviert, wird dies durch zwei kleine Lücken in den seitlichen Kanten des Stundenrahmens im Display angezeigt.
-Ein laufender Alarm wird durch das Auschalten nicht beendet.
+## Weckfunktion ein/ausshalten
+Die grundsätzliche Aktivierung der Weckfunktion erfolgt mit dem Weckfunktionschalter. Damit der Alarm bei Erreichen der Weckzeit aktiviert wird, muss dieser Schalter auf "1" gestellt sein. Ist er auf "0" gestellt und der Alarm damit deaktiviert, wird dies durch zwei kleine Lücken in den seitlichen Kanten des Stundenrahmens im Display angezeigt.
+Alarm an: ![time1200](time12-00.jpg "12:00 Uhr Alarm an")
+Alarm aus: ![time1200](time12-00-almoff.jpg "12:00 Uhr Alarm aus")
+
+**ACHTUNG:** Ein laufender Alarm wird durch das Auschalten nicht beendet.
 Die "Nickerchen" Funktion arbeitet unabhängig von der Position des Alarmschalters.
 
 ## Alarm pausieren ("Schlummer")
 Wenn das Radio aufgrund des erreichens der Alarmzeit eingeschaltet wurde, kann man den Alarm pausieren:
-1. Schlummer Taster betätigen -> Das Radio wird abgeschaltet und nach 10 Minuten erneut aktiviert. Während der "Schlummerphase" blinken zwei Punkte in der offenen Kante der Uhrzeitanzeige.
+1. Schlummer Taste betätigen -> Das Radio wird abgeschaltet und nach 10 Minuten erneut aktiviert. Während der "Schlummerphase" blinken zwei Punkte in der offenen Kante der Uhrzeitanzeige.
 
 ## Aktuellen Alarm beenden
 Um einen laufenden  oder pausierten Alarm zu beenden:
-1. Drehregler drehen-> Auf dem Display erscheint mit der Drehbewegung ein Quadrat 
-2. Drehregler weiter drehen bis das Quadrat komplettiert ist ->  der Alarm wird beendet
+1. Drehregler drehen-> Auf dem Display erscheint Quadrat mit einem Mittelpunkt
+2. Drehregler weiter drehen bis das Quadrat verschwunden ist -> der Alarm wird beendet
+![alm of procedure display](almoff01 "Anzeige zum ausschalten des laufenden Alarms")
 
 ## Nickerchenfunktion
 Für ein Nickerchen, kann der Wecker unabhängig von der Weckzeit auf ein Intervall eingestellt werden, nach dem er dann die Weckfunktion aktiviert.
@@ -152,8 +162,9 @@ Wenn das Radio über die Schlaffunktion aktiviert wurde, kann es wie folgt abges
 2. Schlummer Taste drücken -> die Schlaffunktion wird abgeschaltet
 
 # Zeitsuchanzeige
-Die Zeitsuchanzeige wird angezeigt, solange der Wecker nach dem Einschalten keine zuverlässige Uhrzeitinformation besitzt.
+Die Zeitinformation im RDS Signal ist störanfällig und bedarf einer längeren Prüfung bevor sie vertrauenswürdig ist. Die Zeitsuchanzeige wird angezeigt, solange der Wecker nach dem Einschalten keine zuverlässige Uhrzeitinformation besitzt.
 Sie besteht aus folgenden Elementen:
+![timescan](timescan.jpg "Zeitsuchanzeige")
 * Linker Balken von unten nach oben: Empfangsstärke des laufenden Senders 
 * Mittlerer Balken von oben nach unten: Vertrauen in den aktuell empfangenden RDS Wert (Wenn dieser Balken den unteren Displayrand erreicht, wurden genügen Informationen gesammelt um die Uhrzeit zu übernehmen) 
 * Rechter Balken von unten nach oben: Vertrauen in die aktive Uhrzeit
@@ -177,7 +188,8 @@ Das Radio hat 4 Senderpresets, die auch bei der Suche der RDS Zeit durchsucht we
 2. Mit dem Drehregler die Zeit über den größten Wert hinaus drehen bis ein "P" auf dem Display erscheint.
 3. Drehregler drücken-> Presetauswahlmodus wird gestartet
 4. Mit dem Drehregler das gewünschte Preset auswählen
-Zusatz: Mit der Snooze Taste kann das Radio in diesem Modus ein und ausgeschaltet werden.
+
+Zusatz: Mit der Schlummer Taste kann das Radio in diesem Modus ein und ausgeschaltet werden.
 
 # Diagnosefunktion(Trace)
 Um die Funktionstüchtigkeit des Weckers zu beurteilen, können über die Trace Funktion interne Werte der Uhr abgerufen werden.
@@ -192,10 +204,19 @@ Um die Funktionstüchtigkeit des Weckers zu beurteilen, können über die Trace 
      5. 10er und 1 Ziffer der Frequenz des aktiven Senders
      6. Nachkommastellen der Frequenz des aktiven Senders
      7. Anzeige der Systemlaufzeit in "Binary Coded Decimal" (Zeile 8 Sekunden, Zeile 7 Minuten, Zeile 6 Stunden, Zeile 5 Tage). Die Systemlaufzeit beginnt nach ca. 50 Tagen von vorne bzw. nach jedem "Reboot".
+     
+Als weitere Diagnoseinformation Möglichkeit dient die LED auf dem Arduino Board, die bei geöffnetem Geäuse sichtbar wird. Diese wird synchron zum Radio ein und ausgeschaltet. Sollte also die LED leuchten, aber kein Ton zu hören sein, wären Laustärkeregler, Verstärker und Lautsprecher auf lose Kontakte zu prüfen.
 
 # Demo Funktion
+Um die Zeitanzeige besser kennenzulernen kann die Demofunktion genutzt werden:
+1. Schlummer Taste drücken -> Auf dem Display erscheint das  "Minutenquadrat, mit der Restzeit der Schlaffunktion oder Nickerchenfunktion"
+2. Mit dem Drehregler die Zeit über den größen Wert hinaus drehen bis ein "D" auf dem Display erscheint.
+3. Drehregler drücken-> Demo Funktion wird gestartet und eine "Demo" Uhrzeit angezeigt
 
-#
+Die dem Drehregler kann die Uhrzeit geändert werden. Nach einer kurzen Zeit schaltet die Zeit auch selbstängig schnell vorwärts.
+Wird länger keine Bedienung vorgenommen, wird wieder die Normalzeit angezeigt.
+
+Mit der Schlummertaste kann die Demo Funktion aktiv beendet werden.
 
 # Hintergründe für das Design
 ## Anzeige
