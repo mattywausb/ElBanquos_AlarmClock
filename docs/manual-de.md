@@ -91,8 +91,6 @@ Die Weckzeitanzeige ist ähnlich wie die Uhrzeitanzeige abzulesen. Es gibt folge
 * Die sonst offene Kante des Stundenrahmens ist geschlossen (Anzeige der Weckzeit) oder blinkt (Einstellung der Weckzeit)
 * Die angezeigte Zeit entspricht exakt dem Wert, der gerade gewählt wurde.
 ## Beispiele
-|Display|Weckzeit   |Display|Weckzeit    |
-|-------|-------|-------|--------|
 ![display](alarm07-00.jpg "07:00 Uhr")| 7:00 Uhr
 ![display](alarm07-15.jpg "07:15 Uhr")| 7:15 Uhr
 ![display](alarm07-25.jpg "07:25 Uhr")| 7:25 Uhr
