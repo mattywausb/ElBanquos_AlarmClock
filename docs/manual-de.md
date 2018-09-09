@@ -14,12 +14,17 @@ der folgende Eigenschaften in sich vereint:
 * Sender und Lautstärke können nicht aus Versehen verstellt werden
 
 # Bestandteile des Weckers
-* 8x8 LED Punkmatrix Display zur Anzeige aller Informationen
-* Schlummer Taster
-* Drehregler und Taster
-* Alarmschalter zum grundsätzlichen aktivieren der Alarmfunktion
-* Lautsprecher (8 cm Durchmesser) an der Seite
-* Lautstärkeregler (hinten)
+![Bild](Part_Description.png "Teilebezeichnung")
+1. 8x8 LED Punkmatrix Display zur Anzeige aller Informationen
+2. Schlummer Taster
+3. Drehregler und Taster Einstellung und Bestätigung verschiedener Funktionen
+4. Alarmschalter zum grundsätzlichen aktivieren der Alarmfunktion
+5. USB Port des Arduino für Softwareupdates
+6. "Wurfantenne"
+7. Lauststärkeregler
+8. Kabelausgang zum Netzteil
+9. Lautsprecher
+10. Lichtsensor
 
 # Inbetriebnahme und Schnellstart
 1. Wecker an das Stromnetz anschließen -> Auf dem Display erscheit kurz ein "Bestätigungssymbol" und danach die "Zeitsuchanzeige". Der Wecker 
@@ -44,6 +49,9 @@ Alternativ schaltet sich das Radio nach 1 Stunde automatisch ab.
 # Die Uhrzeitanzeige
 Die Zeitanzeige wurde so gestaltet, dass sie in der Nacht auch von einem kurzsichtigen Menschen ohne Brille mit moderatem Abstand gelesen werden kann. 
 Sie ist deshalb mit einfachen Linienmustern konzipiert, die für alle Zeiteinheiten gut differenzierbar sind. 
+
+![time1200](time12-00.jpg "12:00 Uhr")
+
 Die Anzeige teilt sich in zwei Elemente:
 * Stundenrahmen (mit einer 1 Stunden und 3 Stunden Lücke)
 * Viertelstundenkreis
@@ -66,6 +74,13 @@ In der Mitte des Displays wird der Fortschritt innerhalb einer Stunde in 15 Minu
 * 10 - 25 Minuten: 2 Pixel rechts der Mitte
 * 25-40 Minuten: zusätzlich 2 Pixel unterhalb der Mitte
 * 40-55 Minuten: zusätzlich 2 Pixel links der Mitte
+## Beispiele
+|Display|Zeit   |Display|Zeit    |
+|-------|-------|-------|--------|
+|![display](time05-00.jpg "05:00 Uhr")| 5:00 Uhr|![display](time05-05.jpg "05:05 Uhr")| 5:05 Uhr|
+|![display](time05-15.jpg "05:15 Uhr")| 5:15 Uhr|![display](time05-30.jpg "05:30 Uhr")| 5:30 Uhr|
+|![display](time05-45.jpg "05:45 Uhr")| 5:45 Uhr|![display](time06-00.jpg "06:00 Uhr")| 6:00 Uhr|
+
 
 # Die Weckzeitanzeige
 Die Weckzeitanzeige ist ähnlich wie die Uhrzeitanzeige abzulesen. Es gibt folgende Unterschiede:
