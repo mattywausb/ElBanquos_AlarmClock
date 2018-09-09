@@ -48,6 +48,7 @@ In the repository you will find all necessary code and diagrams to build the clo
 ** Also provided as png export
 * Manuals and design approach
 * Rough skecth to build a housing
+* [List of Parts](https://mattywausb.github.io/ElBanquos_AlarmClock/docs/listofparts.html)
 
 # Tools you need
 * Arduino IDE
