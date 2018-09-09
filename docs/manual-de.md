@@ -75,11 +75,13 @@ In der Mitte des Displays wird der Fortschritt innerhalb einer Stunde in 15 Minu
 * 25-40 Minuten: zusätzlich 2 Pixel unterhalb der Mitte
 * 40-55 Minuten: zusätzlich 2 Pixel links der Mitte
 ## Beispiele
-|Display|Zeit   |Display|Zeit    |
-|-------|-------|-------|--------|
-|![display](time05-00.jpg "05:00 Uhr")| 5:00 Uhr|![display](time05-05.jpg "05:05 Uhr")| 5:05 Uhr|
-|![display](time05-15.jpg "05:15 Uhr")| 5:15 Uhr|![display](time05-30.jpg "05:30 Uhr")| 5:30 Uhr|
-|![display](time05-45.jpg "05:45 Uhr")| 5:45 Uhr|![display](time06-00.jpg "06:00 Uhr")| 6:00 Uhr|
+
+![display](time05-00.jpg "05:00 Uhr")| 5:00 Uhr
+![display](time05-05.jpg "05:05 Uhr")| 5:05 Uhr
+![display](time05-15.jpg "05:15 Uhr")| 5:15 Uhr
+![display](time05-30.jpg "05:30 Uhr")| 5:30 Uhr
+![display](time05-45.jpg "05:45 Uhr")| 5:45 Uhr
+![display](time06-00.jpg "06:00 Uhr")| 6:00 Uhr
 
 
 # Die Weckzeitanzeige
@@ -91,8 +93,10 @@ Die Weckzeitanzeige ist ähnlich wie die Uhrzeitanzeige abzulesen. Es gibt folge
 ## Beispiele
 |Display|Weckzeit   |Display|Weckzeit    |
 |-------|-------|-------|--------|
-|![display](alarm07-00.jpg "07:00 Uhr")| 7:00 Uhr|![display](alarm07-15.jpg "07:15 Uhr")| 07:15 Uhr|
-|![display](alarm07-25.jpg "07:25 Uhr")| 7:25 Uhr|![display](alarm07-30.jpg "07:30 Uhr")| 07:30 Uhr|
+![display](alarm07-00.jpg "07:00 Uhr")| 7:00 Uhr
+![display](alarm07-15.jpg "07:15 Uhr")| 7:15 Uhr
+![display](alarm07-25.jpg "07:25 Uhr")| 7:25 Uhr
+![display](alarm07-30.jpg "07:30 Uhr")| 7:30 Uhr
 
 
 # Bedienung
