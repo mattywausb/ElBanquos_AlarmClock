@@ -118,7 +118,7 @@ Die grundsätzliche Aktivierung der Weckfunktion erfolgt mit dem Weckfunktionsch
 Alarm an: ![time1200](time12-00.jpg "12:00 Uhr Alarm an")
 Alarm aus: ![time1200](time12-00-almoff.jpg "12:00 Uhr Alarm aus")
 
-**ACHTUNG:** Ein laufender Alarm wird durch das Auschalten nicht beendet.
+**Hinweis:** Ein laufender Alarm wird durch das Auschalten nicht beendet.
 Die "Nickerchen" Funktion arbeitet unabhängig von der Position des Alarmschalters.
 
 ## Alarm pausieren ("Schlummer")
@@ -140,14 +140,9 @@ Für ein Nickerchen, kann der Wecker unabhängig von der Weckzeit auf ein Interv
 Der Wecker alarmiert nach Ablauf der eingestellten Zeit.
 
 ## Nickerchenfunktion ausschalten
-Um eine laufende Nickerchenfunktion abzuschalten
+Die Nickerchenfunktion ist im Grunde identisch mit der Schlummerfunktion. Entsprend wird sie auch genauso abgeschaltet 
 1. Drehregler drehen-> Auf dem Display erscheint mit der Drehbewegung ein Quadrat 
-2. Drehregler weiter drehen bis das Quadrat komplettiert ist ->  die Nickerchenfunktion wird abgeschaltet (identisch mit Alarm beenden)
-
-Alternativ;
-1. Schlummer Taste drücken -> Auf dem Display erscheint ein  "Minutenquadrat",  mit der noch verbleibenden Laufzeit
-2. Mit dem Drehregler die Zeit auf 0 verringern
-3. Mit drücken auf den Drehreger wird die Nickerchenfunktion abgeschaltet.
+2. Drehregler weiter drehen bis das Quadrat verschwunden ist ->  die Nickerchenfunktion wird abgeschaltet (der Alarm beendet)
 
 ## Einschlaffunktion / Radio an
 Über die Schlaffunktion kann das Radio spontan für eine definierte Zeit eingeschaltet werden.
@@ -162,6 +157,8 @@ Alternativ: Wird nach der Anpassung der Zeit keine weitere Bedienung vorgenommen
 Wenn das Radio über die Schlaffunktion aktiviert wurde, kann es wie folgt abgeschaltet werden:
 1. Schlummer Taste drücken -> Auf dem Display erscheint das  "Minutenquadrat, mit der Restzeit der Schlaffunktion
 2. Schlummer Taste drücken -> die Schlaffunktion wird abgeschaltet
+
+Alternativ kann die Zeitdauer mit dem Drehregler auch wieder angepasst werden.
 
 # Zeitsuchanzeige
 Die Zeitinformation im RDS Signal ist störanfällig und bedarf einer längeren Prüfung bevor sie vertrauenswürdig ist. Die Zeitsuchanzeige wird angezeigt, solange der Wecker nach dem Einschalten keine zuverlässige Uhrzeitinformation besitzt.

@@ -103,20 +103,14 @@ For taking a shot nap, you can set up an interval after the alarm will start. Th
 
 The the time is up, the clock will start the normal alarm procedure (with snooze function and switch off procedure).
 
-## Check / Change remaining nap time
-To check the remaining nap time, when in nap function is active:
-1. Press the snooze button-> Remaining nap time will be displayed
-2. You may change the time by turning the knob
-
 ## Cancel nap function before alarm
-Cancling the nap function is as easy as canceling the normal alarm (since it is internally a very long snooze mode).
+Cancling the nap function is done with the alarm off procedure (since it is internally just a user defined snooze mode).
 1. turn the knob (3)->The display shows an outer and inner square. The outer square starts disappearing while turning the knob further. When the outer square is vanished, the nap function is stopped.
 
-To be translated later:
+
 ----
-
-
-
+# ------- To be translated later:-----------
+----
 
 
 # Bedienung
