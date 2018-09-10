@@ -1,6 +1,6 @@
 # ElBanquos_AlarmClock
 An Arduino based radio alarm clock with a unique display method and an efficient user interface
-![Overview Picture](docs/alarmclock_main_show.jpg "The clock and my glasses")
+![Overview Picture](docs/alarmclock_main_show_small.jpg "The clock and my glasses")
 
 * [Bedienungsanleitung (German Manual)](https://mattywausb.github.io/ElBanquos_AlarmClock/docs/manual-de.html)
 * [Manual](https://mattywausb.github.io/ElBanquos_AlarmClock/docs/manual-en.html)
