@@ -39,7 +39,7 @@ volatile unsigned int raw_state;
 volatile unsigned int debounced_state=0;  /* Debounced state with history to last cycle managed by the ISR */
 unsigned int tick_state=0;                /* State provided in the actual tick, with change indication to last tick */
 
-#define INPUT_WATCHDOG_TRIGGER_TIME 2000
+#define INPUT_WATCHDOG_TRIGGER_TIME 4000
 
 volatile unsigned long last_input_scan_time;
 volatile bool watchdog_triggered=false;

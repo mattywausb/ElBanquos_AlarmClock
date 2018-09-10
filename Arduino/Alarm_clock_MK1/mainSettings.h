@@ -1,4 +1,4 @@
-#define TRACE_ON 
+//#define TRACE_ON 
 //#define DEBUG
 
 typedef  int MinutesOfDay_t;

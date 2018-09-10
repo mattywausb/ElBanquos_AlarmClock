@@ -4,7 +4,7 @@
 #include "EepromDB.h"
 
 #ifdef TRACE_ON
-#define TRACE_CLOCK 1
+#define TRACE_CLOCK 
 //#define DEBUG_HIGHRES_ALARMSET 1
 #endif
 
@@ -106,7 +106,7 @@ void setup()
   }
 
   radio_setup();
-  input_setup(0, MINUTES_PER_DAY-1,15); /* Encoder Range 24 hoursis,stepping quater hours */
+  input_setup(0, MINUTES_PER_DAY-1,15); /* Encoder Range 24 hours,stepping quater hours */
 
   /* If we boot with nap trigger set, we need to alarm immediatly */
   if(clock_interval_alarm_time!=TRIGGER_IS_OFF)
